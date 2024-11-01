@@ -159,7 +159,7 @@
                 }
                 const csvText = await response.text();
                 
-                const lines = csvText.split('\n').filter(line => line.trim() !== '' && line.split(',').length === 2);
+                const lines = csvText.split('\n').filter(line => line.trim() !== '');
                 hsData = lines.map(line => {
                         const [code, name] = line.split(',').map(item => item.trim().replace(/"/g, ''));
                         return { code, name };
