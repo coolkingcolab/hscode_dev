@@ -166,7 +166,7 @@
                         const [code, name] = line.split(',').map(item => item.trim().replace(/"/g, ''));
                         return { code, name };
                     })
-                    .filter(item => item.code && item.name); // 유효한 데이터만 필터링
+                    .filter(item => item.code && item.name);
 
                 if (hsData.length === 0) {
                     throw new Error('CSV 파일에 유효한 데이터가 없습니다.');
@@ -238,4 +238,66 @@
             const feedback = document.querySelector('.feedback');
             feedback.textContent = isCorrect ? '⭕ 정답입니다!' : `❌ 틀렸습니다! (정답: ${correctAnswer})`;
             feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
-           
+
+            results.push({
+                questionCode: currentQuestions[currentQuestionIndex].code,
+                selectedAnswer,
+                correct: isCorrect
+            });
+
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < currentQuestions.length) {
+                setTimeout(showQuestion, 1000);
+            } else {
+                setTimeout(showResults, 1000);
+                saveIncorrectAnswers();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quizScreen').classList.remove('active');
+            document.getElementById('resultsScreen').classList.add('active');
+
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `result-item ${result.correct ? 'correct' : 'incorrect'}`;
+                div.textContent = `HS 부호: ${result.questionCode} - 선택한 답: ${result.selectedAnswer}`;
+                resultsList.appendChild(div);
+            });
+        }
+
+        function startQuiz() {
+            results = [];
+            currentQuestions = generateQuestions();
+            currentQuestionIndex = 0;
+
+            document.getElementById('startScreen').classList.remove('active');
+            document.getElementById('resultsScreen').classList.remove('active');
+            document.getElementById('quizScreen').classList.add('active');
+
+            showQuestion();
+        }
+
+        function retryIncorrect() {
+            const incorrectAnswers = loadIncorrectAnswers();
+            if (incorrectAnswers.length === 0) {
+                alert('오답 노트에 저장된 문제가 없습니다.');
+                return;
+            }
+
+            results = [];
+            currentQuestions = incorrectAnswers;
+            currentQuestionIndex = 0;
+
+            document.getElementById('startScreen').classList.remove('active');
+            document.getElementById('resultsScreen').classList.remove('active');
+            document.getElementById('quizScreen').classList.add('active');
+
+            showQuestion();
+        }
+    </script>
+</body>
+</html>
