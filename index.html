@@ -211,4 +211,162 @@
         }
 
         function showQuestion() {
-            const question =
+            const question = currentQuestions[currentQuestionIndex];
+            document.querySelector('.progress').textContent = `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
+            document.getElementById('hsCode').textContent = `HS 부호: ${question.code}`;
+            
+            const choicesContainer = document.getElementById('choices');
+            choicesContainer.innerHTML = '';
+            question.choices.forEach((choice, index) => {
+                const button = document.createElement('button');
+                button.className = 'choice-btn';
+                button.textContent = choice.text;
+                button.onclick = () => checkAnswer(choice.correct, choice.text, question.correctAnswer);
+                choicesContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(isCorrect, selectedAnswer, correctAnswer) {
+            const feedback = document.querySelector('.feedback');
+            feedback.textContent = isCorrect ? '⭕ 정답입니다!' : `❌ 틀렸습니다! (정답: ${correctAnswer})`;
+            feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+            
+            // 선택지 비활성화
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            results.push({
+                questionCode: currentQuestions[currentQuestionIndex].code,
+                correct: isCorrect,
+                selectedAnswer: selectedAnswer,
+                correctAnswer: correctAnswer
+            });
+
+            setTimeout(() => {
+                feedback.textContent = '';
+                currentQuestionIndex++;
+                if (currentQuestionIndex < currentQuestions.length) {
+                    showQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1000);
+        }
+
+        function showResults() {
+            showScreen('resultsScreen');
+            
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+            
+            const correctCount = results.filter(r => r.correct).length;
+            resultsList.innerHTML = `<h3>총점: ${correctCount}/${currentQuestions.length}</h3>`;
+            
+            // 맞은 문제
+            if (results.filter(r => r.correct).length > 0) {
+                resultsList.innerHTML += '<h3>맞춘 문제</h3>';
+                results.forEach((result, index) => {
+                    if (result.correct) {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item correct';
+                        resultItem.innerHTML = `
+                            <p>HS 부호: ${result.questionCode}</p>
+                            <p>품목명: ${result.selectedAnswer}</p>
+                        `;
+                        resultsList.appendChild(resultItem);
+                    }
+                });
+            }
+
+            // 틀린 문제
+            if (results.filter(r => !r.correct).length > 0) {
+                resultsList.innerHTML += '<h3>틀린 문제</h3>';
+                results.forEach((result, index) => {
+                    if (!result.correct) {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item incorrect';
+                        resultItem.innerHTML = `
+                            <p>HS 부호: ${result.questionCode}</p>
+                            <p>선택한 답: ${result.selectedAnswer}</p>
+                            <p>정답: ${result.correctAnswer}</p>
+                        `;
+                        resultsList.appendChild(resultItem);
+                    }
+                });
+            }
+
+            saveIncorrectAnswers();
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => 
+                screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startQuiz() {
+            currentQuestions = generateQuestions();
+            currentQuestionIndex = 0;
+            results = [];
+            
+            showScreen('quizScreen');
+            showQuestion();
+        }
+
+        function retryIncorrect() {
+            const incorrectQuestions = loadIncorrectAnswers();
+            if (incorrectQuestions.length === 0) {
+                alert('오답 노트에 저장된 문제가 없습니다.');
+                return;
+            }
+            currentQuestions = incorrectQuestions;
+            currentQuestionIndex = 0;
+            results = [];
+            
+            showScreen('quizScreen');
+            showQuestion();
+        }
+
+        async function captureScreen() {
+            try {
+                const canvas = await html2canvas(document.querySelector("#resultsScreen"));
+                const link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = "HS마스터_퀴즈결과.png";
+                link.click();
+            } catch (error) {
+                alert('화면 캡처 중 오류가 발생했습니다.');
+                console.error('캡처 에러:', error);
+            }
+        }
+
+        async function captureIncorrect() {
+            try {
+                const incorrectSection = document.createElement('div');
+                incorrectSection.innerHTML = '<h3>틀린 문제</h3>';
+                results.filter(r => !r.correct).forEach(result => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item incorrect';
+                    resultItem.innerHTML = `
+                        <p>HS 부호: ${result.questionCode}</p>
+                        <p>선택한 답: ${result.selectedAnswer}</p>
+                        <p>정답: ${result.correctAnswer}</p>
+                    `;
+                    incorrectSection.appendChild(resultItem);
+                });
+                document.body.appendChild(incorrectSection);
+                const canvas = await html2canvas(incorrectSection);
+                document.body.removeChild(incorrectSection);
+                const link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = "HS마스터_틀린문제.png";
+                link.click();
+            } catch (error) {
+                alert('화면 캡처 중 오류가 발생했습니다.');
+                console.error('캡처 에러:', error);
+            }
+        }
+    </script>
+</body>
+</html>
