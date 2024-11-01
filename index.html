@@ -152,6 +152,7 @@
             );
             localStorage.setItem('incorrectAnswers', JSON.stringify(uniqueIncorrectAnswers));
         }
+
         async function loadCSVData() {
             try {
                 const response = await fetch('hscode.csv');
@@ -202,7 +203,6 @@
             return item;
         }
 
-
         function generateQuestions() {
             const shuffled = shuffleArray([...hsData]);
             return shuffled.slice(0, 10).map(question => {
@@ -233,33 +233,40 @@
                 button.onclick = () => checkAnswer(choice.correct, choice.text, question.correctAnswer);
                 choicesContainer.appendChild(button);
             });
+        
+            // 피드백 메시지 초기화
+            const feedback = document.querySelector('.feedback');
+            feedback.textContent = '';
+            feedback.className = 'feedback';
         }
 
+
+        
         function removeIncorrectAnswer(questionCode) {
             let incorrectAnswers = loadIncorrectAnswers();
             incorrectAnswers = incorrectAnswers.filter(item => item.questionCode !== questionCode);
             localStorage.setItem('incorrectAnswers', JSON.stringify(incorrectAnswers));
         }
-            
-              function checkAnswer(isCorrect, selectedAnswer, correctAnswer) {
+
+        function checkAnswer(isCorrect, selectedAnswer, correctAnswer) {
             const feedback = document.querySelector('.feedback');
             feedback.textContent = isCorrect ? '⭕ 정답입니다!' : `❌ 틀렸습니다! (정답: ${correctAnswer})`;
             feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
-        
+
             const currentQuestion = currentQuestions[currentQuestionIndex];
             results.push({
                 questionCode: currentQuestion.code,
                 selectedAnswer,
                 correct: isCorrect
             });
-        
+
             // 맞춘 문제를 오답노트(localStorage)에서 삭제
             if (isCorrect) {
                 removeIncorrectAnswer(currentQuestion.code);
             }
-        
+
             currentQuestionIndex++;
-        
+
             if (currentQuestionIndex < currentQuestions.length) {
                 setTimeout(showQuestion, 1000);
             } else {
@@ -267,7 +274,6 @@
                 saveIncorrectAnswers();
             }
         }
-        
 
         function showResults() {
             document.getElementById('quizScreen').classList.remove('active');
@@ -294,16 +300,18 @@
 
             showQuestion();
         }
+
         function retryIncorrect() {
             const incorrectAnswers = loadIncorrectAnswers();
             if (incorrectAnswers.length === 0) {
                 alert('오답 노트에 저장된 문제가 없습니다.');
                 return;
             }
-
-            // Map incorrect answers to question format
+        
+            // 오답 데이터를 문제 형식으로 변환
             currentQuestions = incorrectAnswers.map(incorrect => {
                 const question = hsData.find(q => q.code === incorrect.questionCode);
+                if (!question) return null; // 데이터가 없을 경우 방지
                 const wrongAnswer = getRandomItem(hsData, question);
                 const choices = shuffleArray([
                     { text: question.name, correct: true },
@@ -314,8 +322,8 @@
                     correctAnswer: question.name,
                     choices: choices
                 };
-            });
-            
+            }).filter(Boolean); // null 값 제거
+        
             results = [];
             currentQuestionIndex = 0;
         
@@ -325,6 +333,7 @@
         
             showQuestion();
         }
+
     </script>
 </body>
 </html>
