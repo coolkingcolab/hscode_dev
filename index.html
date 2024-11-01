@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HS마스터</title>
+    <style>
+        body {
+            font-family: 'Nanum Gothic', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f0f2f5;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 30px;
+        }
+        .btn, .choice-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover, .choice-btn:hover {
+            background-color: #0056b3;
+        }
+        .choice-btn {
+            display: block;
+            width: 100%;
+            background-color: white;
+            color: #007bff;
+            border: 2px solid #007bff;
+        }
+        .choice-btn:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .feedback {
+            font-size: 24px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .correct { color: #28a745; }
+        .incorrect { color: #dc3545; }
+        .progress {
+            margin: 20px 0;
+            font-size: 16px;
+            color: #666;
+        }
+        .results {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .result-item {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .result-item.correct { background-color: #d4edda; }
+        .result-item.incorrect { background-color: #f8d7da; }
+        .screen {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .loading {
+            margin: 20px 0;
+            font-style: italic;
+            color: #666;
+        }
+        #error-message {
+            color: #dc3545;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            .choice-btn {
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="startScreen" class="screen active">
+            <h1>HS마스터</h1>
+            <p>HS부호를 보고 한글품목명을 맞추는 퀴즈입니다. 총 10문제가 출제됩니다.</p>
+            <div id="loadingText" class="loading">데이터를 불러오는 중...</div>
+            <div id="error-message" aria-live="assertive"></div>
+            <button class="btn" onclick="startQuiz()" disabled id="startButton">시작하기</button>
+        </div>
+
+        <div id="quizScreen" class="screen">
+            <h2 id="hsCode" aria-live="polite"></h2>
+            <div id="choices"></div>
+            <div class="feedback" aria-live="assertive"></div>
+            <div class="progress"></div>
+        </div>
+
+        <div id="resultsScreen" class="screen">
+            <h2>퀴즈 결과</h2>
+            <div id="resultsList"></div>
+            <button class="btn" onclick="startQuiz()">다시 풀기</button>
+            <button class="btn" onclick="captureScreen()">캡처하기</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        let hsData = [];
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let results = [];
+
+        async function loadCSVData() {
+            try {
+                const response = await fetch('hscode.csv');
+                if (!response.ok) {
+                    throw new Error('CSV 파일을 불러올 수 없습니다.');
+                }
+                const csvText = await response.text();
+                
+                const lines = csvText.split('\n');
+                hsData = lines.filter(line => line.trim() !== '')
+                    .map(line => {
+                        const [code, name] = line.split(',').map(item => item.trim().replace(/"/g, ''));
+                        return { code, name };
+                    })
+                    .filter(item => item.code && item.name); // 유효한 데이터만 필터링
+
+                if (hsData.length === 0) {
+                    throw new Error('CSV 파일에 유효한 데이터가 없습니다.');
+                }
+
+                document.getElementById('loadingText').textContent = '데이터 로드 완료!';
+                document.getElementById('startButton').disabled = false;
+            } catch (error) {
+                document.getElementById('error-message').textContent = 
+                    `데이터 로드 실패: ${error.message}`;
+                console.error('CSV 로드 에러:', error);
+            }
+        }
+
+        window.onload = loadCSVData;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getRandomItem(arr, exclude) {
+            let item;
+            do {
+                item = arr[Math.floor(Math.random() * arr.length)];
+            } while (item === exclude);
+            return item;
+        }
+
+        function generateQuestions() {
+            const shuffled = shuffleArray([...hsData]);
+            return shuffled.slice(0, 10).map(question => {
+                const wrongAnswer = getRandomItem(hsData, question);
+                const choices = shuffleArray([
+                    { text: question.name, correct: true },
+                    { text: wrongAnswer.name, correct: false }
+                ]);
+                return {
+                    code: question.code,
+                    correctAnswer: question.name,
+                    choices: choices
+                };
+            });
+        }
+
+        function showQuestion() {
+            const question = currentQuestions[currentQuestionIndex];
+            document.querySelector('.progress').textContent = `${currentQuestionIndex + 1} / 10`;
+            document.getElementById('hsCode').textContent = `HS 부호: ${question.code}`;
+            
+            const choicesContainer = document.getElementById('choices');
+            choicesContainer.innerHTML = '';
+            question.choices.forEach((choice, index) => {
+                const button = document.createElement('button');
+                button.className = 'choice-btn';
+                button.textContent = choice.text;
+                button.onclick = () => checkAnswer(choice.correct, choice.text, question.correctAnswer);
+                choicesContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(isCorrect, selectedAnswer, correctAnswer) {
+            const feedback = document.querySelector('.feedback');
+            feedback.textContent = isCorrect ? '⭕ 정답입니다!' : `❌ 틀렸습니다! (정답: ${correctAnswer})`;
+            feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+            
+            // 선택지 비활성화
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            results.push({
+                questionCode: currentQuestions[currentQuestionIndex].code,
+                correct: isCorrect,
+                selectedAnswer: selectedAnswer,
+                correctAnswer: correctAnswer
+            });
+
+            setTimeout(() => {
+                feedback.textContent = '';
+                currentQuestionIndex++;
+                if (currentQuestionIndex < currentQuestions.length) {
+                    showQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1000);
+        }
+
+        function showResults() {
+            showScreen('resultsScreen');
+            
+            const resultsList = document.getElementById('resultsList');
+            resultsList.innerHTML = '';
+            
+            const correctCount = results.filter(r => r.correct).length;
+            resultsList.innerHTML = `<h3>총점: ${correctCount}/10</h3>`;
+            
+            // 맞은 문제
+            if (results.filter(r => r.correct).length > 0) {
+                resultsList.innerHTML += '<h3>맞춘 문제</h3>';
+                results.forEach((result, index) => {
+                    if (result.correct) {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item correct';
+                        resultItem.innerHTML = `
+                            <p>HS 부호: ${result.questionCode}</p>
+                            <p>품목명: ${result.selectedAnswer}</p>
+                        `;
+                        resultsList.appendChild(resultItem);
+                    }
+                });
+            }
+
+            // 틀린 문제
+            if (results.filter(r => !r.correct).length > 0) {
+                resultsList.innerHTML += '<h3>틀린 문제</h3>';
+                results.forEach((result, index) => {
+                    if (!result.correct) {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item incorrect';
+                        resultItem.innerHTML = `
+                            <p>HS 부호: ${result.questionCode}</p>
+                            <p>선택한 답: ${result.selectedAnswer}</p>
+                            <p>정답: ${result.correctAnswer}</p>
+                        `;
+                        resultsList.appendChild(resultItem);
+                    }
+                });
+            }
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => 
+                screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startQuiz() {
+            currentQuestions = generateQuestions();
+            currentQuestionIndex = 0;
+            results = [];
+            
+            showScreen('quizScreen');
+            showQuestion();
+        }
+
+        async function captureScreen() {
+            try {
+                const canvas = await html2canvas(document.querySelector("#resultsScreen"));
+                const link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = "HS마스터_퀴즈결과.png";
+                link.click();
+            } catch (error) {
+                alert('화면 캡처 중 오류가 발생했습니다.');
+                console.error('캡처 에러:', error);
+            }
+        }
+    </script>
+</body>
+</html>
