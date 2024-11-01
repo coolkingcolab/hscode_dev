@@ -280,7 +280,6 @@
 
             showQuestion();
         }
-
         function retryIncorrect() {
             const incorrectAnswers = loadIncorrectAnswers();
             if (incorrectAnswers.length === 0) {
@@ -288,14 +287,28 @@
                 return;
             }
 
+            // Map incorrect answers to question format
+            currentQuestions = incorrectAnswers.map(incorrect => {
+                const question = hsData.find(q => q.code === incorrect.questionCode);
+                const wrongAnswer = getRandomItem(hsData, question);
+                const choices = shuffleArray([
+                    { text: question.name, correct: true },
+                    { text: wrongAnswer.name, correct: false }
+                ]);
+                return {
+                    code: question.code,
+                    correctAnswer: question.name,
+                    choices: choices
+                };
+            });
+            
             results = [];
-            currentQuestions = incorrectAnswers;
             currentQuestionIndex = 0;
-
+        
             document.getElementById('startScreen').classList.remove('active');
             document.getElementById('resultsScreen').classList.remove('active');
             document.getElementById('quizScreen').classList.add('active');
-
+        
             showQuestion();
         }
     </script>
