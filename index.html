@@ -143,7 +143,12 @@
         // Save incorrect answers to localStorage
         function saveIncorrectAnswers() {
             const incorrectAnswers = results.filter(r => !r.correct);
-            localStorage.setItem('incorrectAnswers', JSON.stringify(incorrectAnswers));
+            const uniqueIncorrectAnswers = incorrectAnswers.filter((value, index, self) =>
+                index === self.findIndex((t) => (
+                    t.questionCode === value.questionCode
+                ))
+            );
+            localStorage.setItem('incorrectAnswers', JSON.stringify(uniqueIncorrectAnswers));
         }
 
         async function loadCSVData() {
@@ -154,9 +159,8 @@
                 }
                 const csvText = await response.text();
                 
-                const lines = csvText.split('\n');
-                hsData = lines.filter(line => line.trim() !== '')
-                    .map(line => {
+                const lines = csvText.split('\n').filter(line => line.trim() !== '' && line.split(',').length === 2);
+                hsData = lines.map(line => {
                         const [code, name] = line.split(',').map(item => item.trim().replace(/"/g, ''));
                         return { code, name };
                     })
@@ -188,9 +192,11 @@
 
         function getRandomItem(arr, exclude) {
             let item;
+            let attempts = 0;
             do {
                 item = arr[Math.floor(Math.random() * arr.length)];
-            } while (item === exclude);
+                attempts++;
+            } while (item === exclude && attempts < 10);
             return item;
         }
 
@@ -320,7 +326,16 @@
                 alert('오답 노트에 저장된 문제가 없습니다.');
                 return;
             }
-            currentQuestions = incorrectQuestions;
+            currentQuestions = incorrectQuestions.map(question => {
+                return {
+                    code: question.questionCode,
+                    correctAnswer: question.correctAnswer,
+                    choices: shuffleArray([
+                        { text: question.correctAnswer, correct: true },
+                        { text: getRandomItem(hsData, question.correctAnswer).name, correct: false }
+                    ])
+                };
+            });
             currentQuestionIndex = 0;
             results = [];
             
