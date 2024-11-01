@@ -107,6 +107,7 @@
             <div id="loadingText" class="loading">데이터를 불러오는 중...</div>
             <div id="error-message" aria-live="assertive"></div>
             <button class="btn" onclick="startQuiz()" disabled id="startButton">시작하기</button>
+            <button class="btn" onclick="retryIncorrect()" id="retryIncorrectButton" style="display:none;">오답 노트로 재도전</button>
         </div>
 
         <div id="quizScreen" class="screen">
@@ -121,6 +122,8 @@
             <div id="resultsList"></div>
             <button class="btn" onclick="startQuiz()">다시 풀기</button>
             <button class="btn" onclick="captureScreen()">캡처하기</button>
+            <button class="btn" onclick="captureIncorrect()">틀린 문제 캡처하기</button>
+            <button class="btn" onclick="retryIncorrect()">오답 노트로 재도전</button>
         </div>
     </div>
 
@@ -130,6 +133,18 @@
         let currentQuestions = [];
         let currentQuestionIndex = 0;
         let results = [];
+
+        // Load incorrect answers from localStorage
+        function loadIncorrectAnswers() {
+            const storedIncorrect = localStorage.getItem('incorrectAnswers');
+            return storedIncorrect ? JSON.parse(storedIncorrect) : [];
+        }
+
+        // Save incorrect answers to localStorage
+        function saveIncorrectAnswers() {
+            const incorrectAnswers = results.filter(r => !r.correct);
+            localStorage.setItem('incorrectAnswers', JSON.stringify(incorrectAnswers));
+        }
 
         async function loadCSVData() {
             try {
@@ -153,6 +168,7 @@
 
                 document.getElementById('loadingText').textContent = '데이터 로드 완료!';
                 document.getElementById('startButton').disabled = false;
+                document.getElementById('retryIncorrectButton').style.display = 'block';
             } catch (error) {
                 document.getElementById('error-message').textContent = 
                     `데이터 로드 실패: ${error.message}`;
@@ -196,7 +212,7 @@
 
         function showQuestion() {
             const question = currentQuestions[currentQuestionIndex];
-            document.querySelector('.progress').textContent = `${currentQuestionIndex + 1} / 10`;
+            document.querySelector('.progress').textContent = `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
             document.getElementById('hsCode').textContent = `HS 부호: ${question.code}`;
             
             const choicesContainer = document.getElementById('choices');
@@ -245,7 +261,7 @@
             resultsList.innerHTML = '';
             
             const correctCount = results.filter(r => r.correct).length;
-            resultsList.innerHTML = `<h3>총점: ${correctCount}/10</h3>`;
+            resultsList.innerHTML = `<h3>총점: ${correctCount}/${currentQuestions.length}</h3>`;
             
             // 맞은 문제
             if (results.filter(r => r.correct).length > 0) {
@@ -272,42 +288,4 @@
                         resultItem.className = 'result-item incorrect';
                         resultItem.innerHTML = `
                             <p>HS 부호: ${result.questionCode}</p>
-                            <p>선택한 답: ${result.selectedAnswer}</p>
-                            <p>정답: ${result.correctAnswer}</p>
-                        `;
-                        resultsList.appendChild(resultItem);
-                    }
-                });
-            }
-        }
-
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => 
-                screen.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-        }
-
-        function startQuiz() {
-            currentQuestions = generateQuestions();
-            currentQuestionIndex = 0;
-            results = [];
-            
-            showScreen('quizScreen');
-            showQuestion();
-        }
-
-        async function captureScreen() {
-            try {
-                const canvas = await html2canvas(document.querySelector("#resultsScreen"));
-                const link = document.createElement("a");
-                link.href = canvas.toDataURL("image/png");
-                link.download = "HS마스터_퀴즈결과.png";
-                link.click();
-            } catch (error) {
-                alert('화면 캡처 중 오류가 발생했습니다.');
-                console.error('캡처 에러:', error);
-            }
-        }
-    </script>
-</body>
-</html>
+                            <p>선택한 답: ${result.selectedAnswer}</
