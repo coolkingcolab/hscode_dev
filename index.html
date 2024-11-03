@@ -107,7 +107,7 @@
             <label for="userId">이용자 ID를 입력하세요:</label>
             <input type="text" id="userId" placeholder="이용자 ID">
             <div id="error-message" aria-live="assertive"></div>
-            <button class="btn" onclick="login()" id="loginButton">로그인</button>
+            <button class="btn" id="loginButton">로그인</button>
         </div>
 
         <div id="startScreen" class="screen">
@@ -151,6 +151,9 @@
         let currentQuestionIndex = 0;
         let results = [];
         let userId = '';
+
+        // 로그인 버튼 이벤트 리스너 추가
+        document.getElementById('loginButton').addEventListener('click', login);
 
         // 로그인
         function login() {
@@ -211,174 +214,4 @@
                 }
                 return acc;
             }, []);
-            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(uniqueIncorrectAnswers));
-        }
-
-        // 맞춘 데이터를 사용자 ID별로 저장
-        function saveCorrectAnswers() {
-            if (userId === '') {
-                alert('이용자 ID를 입력해 주세요.');
-                return;
-            }
-            const correctAnswers = results.filter(r => r.correct);
-            const existingCorrect = loadCorrectAnswers();
-            const allCorrectAnswers = [...existingCorrect, ...correctAnswers];
-            const uniqueCorrectAnswers = allCorrectAnswers.filter((value, index, self) =>
-                index === self.findIndex((t) => (
-                    t.questionCode === value.questionCode
-                ))
-            );
-            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(uniqueCorrectAnswers));
-        }
-
-        async function loadCSVData() {
-            try {
-                const response = await fetch('hscode.csv');
-                if (!response.ok) {
-                    throw new Error('CSV 파일을 불러올 수 없습니다.');
-                }
-                const csvText = await response.text();
-                
-                const lines = csvText.split('\n').filter(line => line.trim() !== '');
-                hsData = lines
-                    .map(line => {
-                        const [code, name] = line.split(',').map(item => item.trim().replace(/"/g, ''));
-                        return { code, name };
-                    })
-                    .filter(item => item.code && item.name && item.name !== '기타'); // '기타' 제외
-        
-                if (hsData.length === 0) {
-                    throw new Error('CSV 파일에 유효한 데이터가 없습니다.');
-                }
-        
-                document.getElementById('loadingText').textContent = '데이터 로드 완료!';
-                document.getElementById('startButton').disabled = false;
-                document.getElementById('retryIncorrectButton').style.display = 'block';
-                document.getElementById('retryCorrectButton').style.display = 'block';
-                document.getElementById('statisticsButton').style.display = 'block';
-            } catch (error) {
-                document.getElementById('error-message').textContent = 
-                    `데이터 로드 실패: ${error.message}`;
-                console.error('CSV 로드 에러:', error);
-            }
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        function getRandomItem(arr, exclude) {
-            let item;
-            let attempts = 0;
-            do {
-                item = arr[Math.floor(Math.random() * arr.length)];
-                attempts++;
-            } while ((item === exclude || item.name === '기타') && attempts < 10); // '기타' 제외
-            return item;
-        }
-
-        function generateQuestions() {
-            const shuffled = shuffleArray([...hsData]);
-            return shuffled.slice(0, 10).map(question => {
-                const wrongAnswer = getRandomItem(hsData, question);
-                const choices = shuffleArray([
-                    { text: question.name, correct: true },
-                    { text: wrongAnswer.name, correct: false }
-                ]);
-                return {
-                    code: question.code,
-                    correctAnswer: question.name,
-                    choices: choices
-                };
-            });
-        }
-
-        function showQuestion() {
-            const question = currentQuestions[currentQuestionIndex];
-            document.querySelector('.progress').textContent = `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
-            document.getElementById('hsCode').textContent = `HS 부호: ${question.code}`;
-            
-            const choicesContainer = document.getElementById('choices');
-            choicesContainer.innerHTML = '';
-            question.choices.forEach((choice, index) => {
-                const button = document.createElement('button');
-                button.className = 'choice-btn';
-                button.textContent = choice.text;
-                button.onclick = () => checkAnswer(choice.correct, choice.text, question.correctAnswer);
-                choicesContainer.appendChild(button);
-            });
-        
-            // 피드백 메시지 초기화
-            const feedback = document.querySelector('.feedback');
-            feedback.textContent = '';
-            feedback.className = 'feedback';
-        }
-
-        function removeIncorrectAnswer(questionCode) {
-            let incorrectAnswers = loadIncorrectAnswers();
-            incorrectAnswers = incorrectAnswers.filter(item => item.questionCode !== questionCode);
-            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(incorrectAnswers));
-        }
-
-        function checkAnswer(isCorrect, selectedAnswer, correctAnswer) {
-            const feedback = document.querySelector('.feedback');
-            feedback.textContent = isCorrect ? '⭕ 정답입니다!' : `❌ 틀렸습니다! (정답: ${correctAnswer})`;
-            feedback.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
-
-            const currentQuestion = currentQuestions[currentQuestionIndex];
-            results.push({
-                questionCode: currentQuestion.code,
-                selectedAnswer,
-                correct: isCorrect
-            });
-
-            // 맞춘 문제를 오답노트(localStorage)에서 삭제
-            if (isCorrect) {
-                removeIncorrectAnswer(currentQuestion.code);
-            }
-
-            currentQuestionIndex++;
-
-            if (currentQuestionIndex < currentQuestions.length) {
-                setTimeout(showQuestion, 1000);
-            } else {
-                setTimeout(showResults, 1000);
-                saveIncorrectAnswers();
-                saveCorrectAnswers();
-            }
-        }
-
-        function showResults() {
-            document.getElementById('quizScreen').classList.remove('active');
-            document.getElementById('resultsScreen').classList.add('active');
-
-            const resultsList = document.getElementById('resultsList');
-            resultsList.innerHTML = '';
-            results.forEach(result => {
-                const div = document.createElement('div');
-                div.className = `result-item ${result.correct ? 'correct' : 'incorrect'}`;
-                div.textContent = `HS 부호: ${result.questionCode} - 선택한 답: ${result.selectedAnswer}`;
-                resultsList.appendChild(div);
-            });
-        }
-
-        function startQuiz() {
-            if (!setUserId()) {
-                return;
-            }
-            results = [];
-            currentQuestions = generateQuestions();
-            currentQuestionIndex = 0;
-
-            document.getElementById('startScreen').classList.remove('active');
-            document.getElementById('resultsScreen').classList.remove('active');
-            document.getElementById('quizScreen').classList.add('active');
-
-            showQuestion();
-        }
-
-        function retryIncorrect
+            localStorage.setItem(`${userId}_
