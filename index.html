@@ -273,7 +273,9 @@
                     if (match && match.length >= 2) {
                         const code = match[0].replace(/^"|"$/g, '').trim();
                         const name = match[1].replace(/^"|"$/g, '').trim();
-                        hsData.push({ code, name });
+                        if (name !== '기타') {
+                            hsData.push({ code, name });
+                        }
                     }
                 });
         
@@ -316,11 +318,12 @@
 
 
         function generateQuestions(data = hsData, count = 10) {
-            const shuffled = [...data].sort(() => Math.random() - 0.5);
+            const filteredData = data.filter(item => item.name !== '기타'); // '기타'를 제외한 데이터로 필터링
+            const shuffled = [...filteredData].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count).map(question => {
                 const choices = [question.name];
                 while (choices.length < 2) {
-                    const randomItem = data[Math.floor(Math.random() * data.length)].name;
+                    const randomItem = filteredData[Math.floor(Math.random() * filteredData.length)].name;
                     if (!choices.includes(randomItem)) {
                         choices.push(randomItem);
                     }
@@ -332,6 +335,7 @@
                 };
             });
         }
+
 
         function startQuiz() {
             currentQuestions = generateQuestions();
