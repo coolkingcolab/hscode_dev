@@ -271,8 +271,8 @@
                     // 쉼표를 포함한 필드 처리를 위해 정규표현식 사용
                     const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
                     if (match && match.length >= 2) {
-                        const code = match[0].replace(/^"|"$/g, '').trim();
-                        const name = match[1].replace(/^"|"$/g, '').trim();
+                        const code = match[0].replace(/"/g, '').trim();
+                        const name = match[1].replace(/"/g, '').trim();
                         if (name !== '기타') {
                             hsData.push({ code, name });
                         }
