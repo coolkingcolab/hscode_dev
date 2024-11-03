@@ -264,16 +264,19 @@
             try {
                 const response = await fetch('hscode.csv');
                 const csvText = await response.text();
-
+        
                 const lines = csvText.split('\n');
                 hsData.length = 0;
                 lines.slice(1).forEach(line => {
-                    const [code, name] = line.split(',');
-                    if (code && name) {
-                        hsData.push({ code: code.trim(), name: name.trim() });
+                    // 쉼표를 포함한 필드 처리를 위해 정규표현식 사용
+                    const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                    if (match && match.length >= 2) {
+                        const code = match[0].replace(/^"|"$/g, '').trim();
+                        const name = match[1].replace(/^"|"$/g, '').trim();
+                        hsData.push({ code, name });
                     }
                 });
-
+        
                 document.getElementById('startButton').disabled = false;
                 document.getElementById('loadingText').style.display = 'none';
                 updateMenuVisibility();
@@ -287,6 +290,7 @@
                 console.error('Error loading CSV:', error);
             }
         }
+
 
         function updateMenuVisibility() {
             const incorrectAnswers = loadIncorrectAnswers();
