@@ -394,6 +394,13 @@
                 }
             });
 
+            // 정답 여부에 따라 오답노트 또는 맞은 문제 데이터베이스에 저장
+            if (correct) {
+                saveCorrectResponse(results[results.length - 1]);
+            } else {
+                saveIncorrectResponse(results[results.length - 1]);
+            }
+            
             setTimeout(() => {
                 if (currentQuestionIndex < currentQuestions.length - 1) {
                     currentQuestionIndex++;
@@ -462,43 +469,50 @@
                 } else {
                     updated[existingIndex].correctCount = (updated[existingIndex].correctCount || 1) + 1;
                 }
-            });
 
-            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated));
+                // 오답노트에서 해당 문제 삭제
+                deleteFromIncorrectAnswers(response.questionCode);
+           
+
+                localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated));
         }
 
-        function saveIncorrectResponses() {
+        function saveIncorrectResponse(response) {
             if (!userId) return;
-            const incorrectAnswers = results.filter(r => !r.correct);
             const stored = loadIncorrectAnswers();
             const updated = [...stored];
         
-            incorrectAnswers.forEach(answer => {
-                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingIndex === -1) {
-                    updated.push({
-                        questionCode: answer.questionCode,
-                        correctAnswer: answer.correctAnswer,
-                        userAnswers: [answer.userAnswer],
-                        wrongCount: 1
-                    });
-                } else {
-                    updated[existingIndex].wrongCount = (updated[existingIndex].wrongCount || 1) + 1;
-                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
-                    updated[existingIndex].userAnswers.push(answer.userAnswer);
-                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers.slice(-5);
-                    updated[existingIndex].correctAnswer = answer.correctAnswer;
-                }
-            });
+            const existingIndex = updated.findIndex(a => a.questionCode === response.questionCode);
+            if (existingIndex === -1) {
+                updated.push({
+                    questionCode: response.questionCode,
+                    correctAnswer: response.correctAnswer,
+                    userAnswers: [response.userAnswer],
+                    wrongCount: 1
+                });
+            } else {
+                updated[existingIndex].wrongCount = (updated[existingIndex].wrongCount || 1) + 1;
+                updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
+                updated[existingIndex].userAnswers.push(response.userAnswer);
+                updated[existingIndex].userAnswers = updated[existingIndex].userAnswers.slice(-5);
+                updated[existingIndex].correctAnswer = response.correctAnswer;
+            }
         
             localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
         }
-        function loadCorrectAnswers() {
+        
+        function deleteFromIncorrectAnswers(questionCode) {
+            if (!userId) return;
+            const stored = loadIncorrectAnswers();
+            const updated = stored.filter(a => a.questionCode !== questionCode);
+            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
+        }
+       function loadCorrectAnswers() {
             if (!userId) return [];
             const stored = localStorage.getItem(`${userId}_correctAnswers`);
             return stored ? JSON.parse(stored) : [];
         }
-
+    
         function loadIncorrectAnswers() {
             if (!userId) return [];
             const stored = localStorage.getItem(`${userId}_incorrectAnswers`);
