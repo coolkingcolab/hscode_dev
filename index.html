@@ -209,16 +209,19 @@
         let results = [];
         let userId = '';
 
-        // 이벤트 리스너 설정
-        document.getElementById('loginButton').addEventListener('click', login);
-        document.getElementById('startButton').addEventListener('click', startQuiz);
-        document.getElementById('retryCorrectButton').addEventListener('click', retryCorrect);
-        document.getElementById('retryIncorrectButton').addEventListener('click', retryIncorrect);
-        document.getElementById('statisticsButton').addEventListener('click', showStatistics);
-        document.getElementById('logoutButton').addEventListener('click', logout);
+        // 이벤트 리스너 부분을 다음과 같이 수정
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM 로드됨');  // 추가된 부분
+            document.getElementById('loginButton').addEventListener('click', login);
+            document.getElementById('startButton').addEventListener('click', startQuiz);
+            document.getElementById('retryCorrectButton').addEventListener('click', retryCorrect);
+            document.getElementById('retryIncorrectButton').addEventListener('click', retryIncorrect);
+            document.getElementById('statisticsButton').addEventListener('click', showStatistics);
+            document.getElementById('logoutButton').addEventListener('click', logout);
 
         // 로그인 처리
         async function login() {
+            console.log('로그인 시도');  // 추가된 부분
             const inputId = document.getElementById('userId').value.trim();
             if (!inputId) {
                 document.getElementById('error-message').textContent = '이용자 ID를 입력해 주세요.';
@@ -226,6 +229,7 @@
             }
             
             userId = inputId;
+            console.log('userId:', userId);  // 추가된 부분
             document.getElementById('welcome-message').textContent = `${userId}님 환영합니다!`;
             showScreen('startScreen');
             await loadCSVData();
