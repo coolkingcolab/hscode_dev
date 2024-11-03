@@ -215,7 +215,7 @@
 
     <!-- 스크립트 부분 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-       <script>
+    <script>
         const hsData = [];
         let currentQuestions = [];
         let currentQuestionIndex = 0;
@@ -230,15 +230,6 @@
                 loadHsCodeData();
                 updateMenuVisibility();
             }
-           // 사용자 ID 입력 필드에 이벤트 리스너 추가
-            const userIdInput = document.getElementById('userId');
-            userIdInput.addEventListener('keyup', (event) => {
-                if (event.key === 'Enter') {
-                    login();
-                }
-            });
-        
-            // 로그인 버튼에 이벤트 리스너 추가
             document.getElementById('loginButton').addEventListener('click', login);
             document.getElementById('startButton').addEventListener('click', startQuiz);
             document.getElementById('retryCorrectButton').addEventListener('click', retryCorrect);
@@ -277,12 +268,12 @@
                 const lines = csvText.split('\n');
                 hsData.length = 0;
                 lines.slice(1).forEach(line => {
-                    // 쉼표를 포함한 필드를 제대로 처리하기 위해 정규표현식 사용
+                    // 쉼표를 포함한 필드 처리를 위해 정규표현식 사용
                     const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
                     if (match && match.length >= 2) {
                         const code = match[0].replace(/^"|"$/g, '').trim();
                         const name = match[1].replace(/^"|"$/g, '').trim();
-                        if (name !== '기타') { // '기타'인 항목은 제외
+                        if (name !== '기타') {
                             hsData.push({ code, name });
                         }
                     }
@@ -301,7 +292,6 @@
                 console.error('Error loading CSV:', error);
             }
         }
-
 
 
         function updateMenuVisibility() {
@@ -369,12 +359,6 @@
                 choicesDiv.appendChild(button);
             });
 
-            document.getElementById('hsCode').textContent = question.code;
-            const choicesDiv = document.getElementById('choices');
-            choicesDiv.innerHTML = `
-              <button class="choice-btn">${question.correctAnswer.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</button>
-            `;
-            
             document.querySelector('.progress').textContent =
                 `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
             const feedback = document.querySelector('.feedback');
