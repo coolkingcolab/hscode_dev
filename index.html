@@ -202,11 +202,15 @@
             const incorrectAnswers = results.filter(r => !r.correct);
             const existingIncorrect = loadIncorrectAnswers();
             const allIncorrectAnswers = [...existingIncorrect, ...incorrectAnswers];
-            const uniqueIncorrectAnswers = allIncorrectAnswers.filter((value, index, self) =>
-                index === self.findIndex((t) => (
-                    t.questionCode === value.questionCode
-                ))
-            );
+            const uniqueIncorrectAnswers = allIncorrectAnswers.reduce((acc, current) => {
+                const x = acc.find(item => item.questionCode === current.questionCode);
+                if (!x) {
+                    acc.push(current);
+                } else {
+                    x.wrongCount = (x.wrongCount || 1) + 1;
+                }
+                return acc;
+            }, []);
             localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(uniqueIncorrectAnswers));
         }
 
@@ -377,108 +381,4 @@
             showQuestion();
         }
 
-        function retryIncorrect() {
-            if (!setUserId()) {
-                return;
-            }
-            const incorrectAnswers = loadIncorrectAnswers();
-            if (incorrectAnswers.length === 0) {
-                alert('오답 노트에 저장된 문제가 없습니다.');
-                return;
-            }
-        
-            // 오답 데이터를 문제 형식으로 변환
-            currentQuestions = incorrectAnswers.map(incorrect => {
-                const question = hsData.find(q => q.code === incorrect.questionCode);
-                if (!question) return null; // 데이터가 없을 경우 방지
-                const wrongAnswer = getRandomItem(hsData, question);
-                const choices = shuffleArray([
-                    { text: question.name, correct: true },
-                    { text: wrongAnswer.name, correct: false }
-                ]);
-                return {
-                    code: question.code,
-                    correctAnswer: question.name,
-                    choices: choices
-                };
-            }).filter(Boolean); // null 값 제거
-        
-            results = [];
-            currentQuestionIndex = 0;
-        
-            document.getElementById('startScreen').classList.remove('active');
-            document.getElementById('resultsScreen').classList.remove('active');
-            document.getElementById('quizScreen').classList.add('active');
-        
-            showQuestion();
-        }
-
-        function retryCorrect() {
-            if (!setUserId()) {
-                return;
-            }
-            const correctAnswers = loadCorrectAnswers();
-            if (correctAnswers.length === 0) {
-                alert('맞춘 문제가 없습니다.');
-                return;
-            }
-
-            // 맞춘 데이터를 문제 형식으로 변환
-            currentQuestions = shuffleArray(correctAnswers).slice(0, 10).map(correct => {
-                const question = hsData.find(q => q.code === correct.questionCode);
-                if (!question) return null; // 데이터가 없을 경우 방지
-                const wrongAnswer = getRandomItem(hsData, question);
-                const choices = shuffleArray([
-                    { text: question.name, correct: true },
-                    { text: wrongAnswer.name, correct: false }
-                ]);
-                return {
-                    code: question.code,
-                    correctAnswer: question.name,
-                    choices: choices
-                };
-            }).filter(Boolean); // null 값 제거
-
-            results = [];
-            currentQuestionIndex = 0;
-
-            document.getElementById('startScreen').classList.remove('active');
-            document.getElementById('resultsScreen').classList.remove('active');
-            document.getElementById('quizScreen').classList.add('active');
-
-            showQuestion();
-        }
-
-        function showStatistics() {
-            if (!setUserId()) {
-                return;
-            }
-            const incorrectAnswers = loadIncorrectAnswers();
-            if (incorrectAnswers.length === 0) {
-                alert('오답 노트에 저장된 문제가 없습니다.');
-                return;
-            }
-
-            document.getElementById('startScreen').classList.remove('active');
-            document.getElementById('quizScreen').classList.remove('active');
-            document.getElementById('resultsScreen').classList.remove('active');
-            document.getElementById('statisticsScreen').classList.add('active');
-
-            const statisticsList = document.getElementById('statisticsList');
-            statisticsList.innerHTML = '';
-
-            incorrectAnswers.forEach(answer => {
-                const div = document.createElement('div');
-                div.className = 'result-item incorrect';
-                div.textContent = `HS 부호: ${answer.questionCode} - 틀린 횟수: ${(answer.wrongCount || 1)}`;
-                statisticsList.appendChild(div);
-            });
-        }
-
-        function goToStart() {
-            document.getElementById('statisticsScreen').classList.remove('active');
-            document.getElementById('startScreen').classList.add('active');
-        }
-    </script>
-</body>
-</html>
+        function retryIncorrect
