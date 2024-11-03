@@ -304,7 +304,7 @@
             const shuffled = [...data].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count).map(question => {
                 const choices = [question.name];
-                while (choices.length < 4) {
+                while (choices.length < 2) {
                     const randomItem = data[Math.floor(Math.random() * data.length)].name;
                     if (!choices.includes(randomItem)) {
                         choices.push(randomItem);
@@ -452,7 +452,7 @@
             const incorrectAnswers = results.filter(r => !r.correct);
             const stored = loadIncorrectAnswers();
             const updated = [...stored];
-
+        
             incorrectAnswers.forEach(answer => {
                 const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
                 if (existingIndex === -1) {
@@ -467,12 +467,12 @@
                     updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
                     updated[existingIndex].userAnswers.push(answer.userAnswer);
                     updated[existingIndex].userAnswers = updated[existingIndex].userAnswers.slice(-5);
+                    updated[existingIndex].correctAnswer = answer.correctAnswer;
                 }
             });
-
+        
             localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
         }
-
         function loadCorrectAnswers() {
             if (!userId) return [];
             const stored = localStorage.getItem(`${userId}_correctAnswers`);
