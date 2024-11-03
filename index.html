@@ -230,6 +230,15 @@
                 loadHsCodeData();
                 updateMenuVisibility();
             }
+           // 사용자 ID 입력 필드에 이벤트 리스너 추가
+            const userIdInput = document.getElementById('userId');
+            userIdInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    login();
+                }
+            });
+        
+            // 로그인 버튼에 이벤트 리스너 추가
             document.getElementById('loginButton').addEventListener('click', login);
             document.getElementById('startButton').addEventListener('click', startQuiz);
             document.getElementById('retryCorrectButton').addEventListener('click', retryCorrect);
