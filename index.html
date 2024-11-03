@@ -215,6 +215,7 @@
 
     <!-- 스크립트 부분 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script>
         const hsData = [];
         let currentQuestions = [];
@@ -261,37 +262,34 @@
         }
 
         async function loadHsCodeData() {
-            try {
-                const response = await fetch('hscode.csv');
-                const csvText = await response.text();
-        
-                const lines = csvText.split('\n');
-                hsData.length = 0;
-                lines.slice(1).forEach(line => {
-                    // 쉼표를 포함한 필드 처리를 위해 정규표현식 사용
-                    const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                    if (match && match.length >= 2) {
-                        const code = match[0].replace(/"/g, '').trim();
-                        const name = match[1].replace(/"/g, '').trim();
-                        if (name !== '기타') {
-                            hsData.push({ code, name });
-                        }
-                    }
-                });
-        
-                document.getElementById('startButton').disabled = false;
-                document.getElementById('loadingText').style.display = 'none';
-                updateMenuVisibility();
-            } catch (error) {
-                document.getElementById('loadingText').textContent = '데이터를 불러오는데 실패했습니다. 다시 시도해 주세요.';
-                const retryButton = document.createElement('button');
-                retryButton.textContent = '재시도';
-                retryButton.className = 'btn';
-                retryButton.onclick = loadHsCodeData;
-                document.getElementById('startScreen').appendChild(retryButton);
-                console.error('Error loading CSV:', error);
-            }
+        try {
+            const response = await fetch('hscode.csv');
+            const csvText = await response.text();
+            const data = Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+            });
+
+            hsData.length = 0;
+            data.data.forEach(item => {
+                if (item.name && item.name !== '기타') {
+                    hsData.push({ code: item.code, name: item.name });
+                }
+            });
+
+            document.getElementById('startButton').disabled = false;
+            document.getElementById('loadingText').style.display = 'none';
+            updateMenuVisibility();
+        } catch (error) {
+            document.getElementById('loadingText').textContent = '데이터를 불러오는데 실패했습니다. 다시 시도해 주세요.';
+            const retryButton = document.createElement('button');
+            retryButton.textContent = '재시도';
+            retryButton.className = 'btn';
+            retryButton.onclick = loadHsCodeData;
+            document.getElementById('startScreen').appendChild(retryButton);
+            console.error('Error loading CSV:', error);
         }
+    }
 
 
         function updateMenuVisibility() {
