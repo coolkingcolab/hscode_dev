@@ -169,9 +169,9 @@
             <h1>HS마스터 메뉴</h1>
             <div id="loadingText" class="loading">데이터를 불러오는 중...</div>
             <button class="menu-button" id="startButton" disabled>새로운 퀴즈 시작하기</button>
-            <button class="menu-button" id="retryCorrectButton" style="display: none;">맞춘 문제 다시 풀기</button>
-            <button class="menu-button" id="retryIncorrectButton" style="display: none;">오답 노트로 재도전</button>
-            <button class="menu-button" id="statisticsButton" style="display: none;">오답 통계 보기</button>
+            <button class="menu-button" id="retryCorrectButton" onclick="retryCorrect()" style="display: none;">맞춘 문제 다시 풀기</button>
+            <button class="menu-button" id="retryIncorrectButton" onclick="retryIncorrect()" style="display: none;">오답 노트로 재도전</button>
+            <button class="menu-button" id="statisticsButton" onclick="showStatistics()" style="display: none;">오답 통계 보기</button>
             <button class="menu-button" id="logoutButton">로그아웃</button>
         </div>
 
@@ -232,7 +232,7 @@
             console.log('userId:', userId);  // 추가된 부분
             document.getElementById('welcome-message').textContent = `${userId}님 환영합니다!`;
             showScreen('startScreen');
-            await loadCSVData();
+            await loadHsCodeData();
             updateMenuVisibility();
         }
 
@@ -387,8 +387,8 @@
                 resultsList.appendChild(resultItem);
             });
 
-            saveCorrectAnswers();
-            saveIncorrectAnswers();
+            saveCorrectResponses();
+            saveIncorrectResponses();
             updateMenuVisibility();
             showScreen('resultsScreen');
         }
