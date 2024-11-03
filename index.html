@@ -390,12 +390,111 @@
         }
 
         // 정답 데이터 저장
-        function saveCorrectAnswers() {
-            const correctAnswers = results.filter(r => r.correct);
-            const stored = loadCorrectAnswers();
-            const updated = [...stored];
-            
-            correctAnswers.forEach(answer => {
-                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingIndex === -1) {
-                    updated.push({
+       function saveCorrectAnswers() {
+    const correctAnswers = results.filter(r => r.correct);
+    const stored = loadCorrectAnswers();
+    const updated = [...stored];
+    
+    correctAnswers.forEach(answer => {
+        const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+        if (existingIndex === -1) {
+            updated.push({
+                questionCode: answer.questionCode,
+                correctAnswer: answer.correctAnswer,
+                correctCount: 1
+            });
+        } else {
+            updated[existingIndex].correctCount = (updated[existingIndex].correctCount || 1) + 1;
+        }
+    });
+    
+    localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated));
+}
+                        // saveCorrectAnswers 함수 완성
+
+// 오답 데이터 저장
+function saveIncorrectAnswers() {
+    const incorrectAnswers = results.filter(r => !r.correct);
+    const stored = loadIncorrectAnswers();
+    const updated = [...stored];
+    
+    incorrectAnswers.forEach(answer => {
+        const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+        if (existingIndex === -1) {
+            updated.push({
+                questionCode: answer.questionCode,
+                correctAnswer: answer.correctAnswer,
+                userAnswers: [answer.userAnswer],
+                wrongCount: 1
+            });
+        } else {
+            updated[existingIndex].wrongCount = (updated[existingIndex].wrongCount || 1) + 1;
+            updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
+            updated[existingIndex].userAnswers.push(answer.userAnswer);
+        }
+    });
+    
+    localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
+}
+
+// 저장된 정답 데이터 불러오기
+function loadCorrectAnswers() {
+    if (!userId) return [];
+    const stored = localStorage.getItem(`${userId}_correctAnswers`);
+    return stored ? JSON.parse(stored) : [];
+}
+
+// 저장된 오답 데이터 불러오기
+function loadIncorrectAnswers() {
+    if (!userId) return [];
+    const stored = localStorage.getItem(`${userId}_incorrectAnswers`);
+    return stored ? JSON.parse(stored) : [];
+}
+
+// 화면 전환 함수
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+    document.getElementById(screenId).classList.add('active');
+}
+
+// 시작 화면으로 돌아가기
+function goToStart() {
+    showScreen('startScreen');
+}
+
+// 화면 캡처
+function captureScreen() {
+    html2canvas(document.getElementById('resultsScreen')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'quiz-results.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+
+// 오답만 캡처
+function captureIncorrect() {
+    const incorrectResults = document.querySelectorAll('.result-item.incorrect');
+    if (incorrectResults.length === 0) {
+        alert('틀린 문제가 없습니다.');
+        return;
+    }
+
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+    container.style.backgroundColor = 'white';
+    incorrectResults.forEach(item => {
+        container.appendChild(item.cloneNode(true));
+    });
+
+    document.body.appendChild(container);
+    html2canvas(container).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'incorrect-answers.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        document.body.removeChild(container);
+    });
+}
