@@ -266,7 +266,7 @@
             const response = await fetch('hscode.csv');
             const csvText = await response.text();
             const data = Papa.parse(csvText, {
-                header: true,
+                header: false,
                 skipEmptyLines: true,
             });
 
