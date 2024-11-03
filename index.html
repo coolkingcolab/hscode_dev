@@ -149,6 +149,18 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .btn, .choice-btn {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            #userId {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -201,84 +213,93 @@
         </div>
     </div>
 
+    <!-- 스크립트 부분 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-        let hsData = [];
+        const hsData = [];
         let currentQuestions = [];
         let currentQuestionIndex = 0;
         let results = [];
         let userId = '';
 
-        // 이벤트 리스너 부분을 다음과 같이 수정
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM 로드됨');  // 추가된 부분
+            const savedUserId = localStorage.getItem('userId');
+            if (savedUserId) {
+                userId = savedUserId;
+                showScreen('startScreen');
+                loadHsCodeData();
+                updateMenuVisibility();
+            }
             document.getElementById('loginButton').addEventListener('click', login);
             document.getElementById('startButton').addEventListener('click', startQuiz);
             document.getElementById('retryCorrectButton').addEventListener('click', retryCorrect);
             document.getElementById('retryIncorrectButton').addEventListener('click', retryIncorrect);
             document.getElementById('statisticsButton').addEventListener('click', showStatistics);
             document.getElementById('logoutButton').addEventListener('click', logout);
+        });
 
-        // 로그인 처리
         async function login() {
-            console.log('로그인 시도');  // 추가된 부분
             const inputId = document.getElementById('userId').value.trim();
             if (!inputId) {
                 document.getElementById('error-message').textContent = '이용자 ID를 입력해 주세요.';
+                document.getElementById('userId').focus();
                 return;
             }
-            
+        
             userId = inputId;
-            console.log('userId:', userId);  // 추가된 부분
+            localStorage.setItem('userId', userId); // localStorage에 사용자 ID 저장
             document.getElementById('welcome-message').textContent = `${userId}님 환영합니다!`;
             showScreen('startScreen');
             await loadHsCodeData();
             updateMenuVisibility();
         }
 
-        // 로그아웃
         function logout() {
             userId = '';
             document.getElementById('userId').value = '';
             showScreen('loginScreen');
         }
 
-        // CSV 파일 로드
-        async function loadCSVData() {
+        async function loadHsCodeData() {
             try {
                 const response = await fetch('hscode.csv');
                 const csvText = await response.text();
-                
-                // CSV 파싱
+
                 const lines = csvText.split('\n');
-                hsData = lines.slice(1).map(line => {
+                hsData.length = 0;
+                lines.slice(1).forEach(line => {
                     const [code, name] = line.split(',');
-                    return { code: code.trim(), name: name.trim() };
-                }).filter(item => item.code && item.name);
+                    if (code && name) {
+                        hsData.push({ code: code.trim(), name: name.trim() });
+                    }
+                });
 
                 document.getElementById('startButton').disabled = false;
                 document.getElementById('loadingText').style.display = 'none';
                 updateMenuVisibility();
             } catch (error) {
-                document.getElementById('loadingText').textContent = '데이터 로드 실패. 페이지를 새로고침해주세요.';
+                document.getElementById('loadingText').textContent = '데이터를 불러오는데 실패했습니다. 다시 시도해 주세요.';
+                const retryButton = document.createElement('button');
+                retryButton.textContent = '재시도';
+                retryButton.className = 'btn';
+                retryButton.onclick = loadHsCodeData;
+                document.getElementById('startScreen').appendChild(retryButton);
                 console.error('Error loading CSV:', error);
             }
         }
 
-        // 메뉴 버튼 가시성 업데이트
         function updateMenuVisibility() {
             const incorrectAnswers = loadIncorrectAnswers();
             const correctAnswers = loadCorrectAnswers();
-            
-            document.getElementById('retryIncorrectButton').style.display = 
+
+            document.getElementById('retryIncorrectButton').style.display =
                 incorrectAnswers.length > 0 ? 'block' : 'none';
-            document.getElementById('retryCorrectButton').style.display = 
+            document.getElementById('retryCorrectButton').style.display =
                 correctAnswers.length > 0 ? 'block' : 'none';
-            document.getElementById('statisticsButton').style.display = 
+            document.getElementById('statisticsButton').style.display =
                 incorrectAnswers.length > 0 ? 'block' : 'none';
         }
 
-        // 문제 생성
         function generateQuestions(data = hsData, count = 10) {
             const shuffled = [...data].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count).map(question => {
@@ -297,7 +318,6 @@
             });
         }
 
-        // 퀴즈 시작
         function startQuiz() {
             currentQuestions = generateQuestions();
             currentQuestionIndex = 0;
@@ -306,11 +326,10 @@
             showScreen('quizScreen');
         }
 
-        // 문제 표시
         function showQuestion() {
             const question = currentQuestions[currentQuestionIndex];
             document.getElementById('hsCode').textContent = question.code;
-            
+
             const choicesDiv = document.getElementById('choices');
             choicesDiv.innerHTML = '';
             question.choices.forEach(choice => {
@@ -321,16 +340,17 @@
                 choicesDiv.appendChild(button);
             });
 
-            document.querySelector('.progress').textContent = 
+            document.querySelector('.progress').textContent =
                 `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
-            document.querySelector('.feedback').textContent = '';
+            const feedback = document.querySelector('.feedback');
+            feedback.textContent = '';
+            feedback.className = 'feedback';
         }
 
-        // 답변 확인
         function checkAnswer(choice) {
             const question = currentQuestions[currentQuestionIndex];
             const correct = choice === question.correctAnswer;
-            
+
             results.push({
                 questionCode: question.code,
                 correctAnswer: question.correctAnswer,
@@ -342,7 +362,6 @@
             feedback.textContent = correct ? '정답입니다!' : '틀렸습니다.';
             feedback.className = 'feedback ' + (correct ? 'correct' : 'incorrect');
 
-            // 버튼 비활성화
             const buttons = document.querySelectorAll('.choice-btn');
             buttons.forEach(button => {
                 button.disabled = true;
@@ -362,28 +381,41 @@
                 } else {
                     showResults();
                 }
-            }, 1500);
+            }, 1000);
         }
 
-        // 결과 표시
         function showResults() {
             const resultsList = document.getElementById('resultsList');
             resultsList.innerHTML = '';
-            
+
             const correctCount = results.filter(r => r.correct).length;
-            resultsList.innerHTML += `
-                <h3>결과: ${correctCount} / ${results.length} 문제 정답</h3>
-                <p>사용자: ${userId}</p>
-            `;
-            
+
+            const resultHeader = document.createElement('h3');
+            resultHeader.textContent = `결과: ${correctCount} / ${results.length} 문제 정답`;
+            resultsList.appendChild(resultHeader);
+
+            const userParagraph = document.createElement('p');
+            userParagraph.textContent = `사용자: ${userId}`;
+            resultsList.appendChild(userParagraph);
+
             results.forEach((result, index) => {
                 const resultItem = document.createElement('div');
                 resultItem.className = `result-item ${result.correct ? 'correct' : 'incorrect'}`;
-                resultItem.innerHTML = `
-                    <p><strong>${index + 1}번.</strong> HS코드: ${result.questionCode}</p>
-                    <p>정답: ${result.correctAnswer}</p>
-                    ${!result.correct ? `<p>제출한 답: ${result.userAnswer}</p>` : ''}
-                `;
+
+                const questionParagraph = document.createElement('p');
+                questionParagraph.innerHTML = `<strong>${index + 1}번.</strong> HS코드: ${result.questionCode}`;
+                resultItem.appendChild(questionParagraph);
+
+                const answerParagraph = document.createElement('p');
+                answerParagraph.textContent = `정답: ${result.correctAnswer}`;
+                resultItem.appendChild(answerParagraph);
+
+                if (!result.correct) {
+                    const userAnswerParagraph = document.createElement('p');
+                    userAnswerParagraph.textContent = `제출한 답: ${result.userAnswer}`;
+                    resultItem.appendChild(userAnswerParagraph);
+                }
+
                 resultsList.appendChild(resultItem);
             });
 
@@ -393,112 +425,173 @@
             showScreen('resultsScreen');
         }
 
-        // 정답 데이터 저장
-       function saveCorrectAnswers() {
-    const correctAnswers = results.filter(r => r.correct);
-    const stored = loadCorrectAnswers();
-    const updated = [...stored];
-    
-    correctAnswers.forEach(answer => {
-        const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-        if (existingIndex === -1) {
-            updated.push({
-                questionCode: answer.questionCode,
-                correctAnswer: answer.correctAnswer,
-                correctCount: 1
+        function saveCorrectResponses() {
+            if (!userId) return;
+            const correctAnswers = results.filter(r => r.correct);
+            const stored = loadCorrectAnswers();
+            const updated = [...stored];
+
+            correctAnswers.forEach(answer => {
+                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingIndex === -1) {
+                    updated.push({
+                        questionCode: answer.questionCode,
+                        correctAnswer: answer.correctAnswer,
+                        correctCount: 1
+                    });
+                } else {
+                    updated[existingIndex].correctCount = (updated[existingIndex].correctCount || 1) + 1;
+                }
             });
-        } else {
-            updated[existingIndex].correctCount = (updated[existingIndex].correctCount || 1) + 1;
-        }
-    });
-    
-    localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated));
-}
-                        // saveCorrectAnswers 함수 완성
 
-// 오답 데이터 저장
-function saveIncorrectAnswers() {
-    const incorrectAnswers = results.filter(r => !r.correct);
-    const stored = loadIncorrectAnswers();
-    const updated = [...stored];
-    
-    incorrectAnswers.forEach(answer => {
-        const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-        if (existingIndex === -1) {
-            updated.push({
-                questionCode: answer.questionCode,
-                correctAnswer: answer.correctAnswer,
-                userAnswers: [answer.userAnswer],
-                wrongCount: 1
+            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated));
+        }
+
+        function saveIncorrectResponses() {
+            if (!userId) return;
+            const incorrectAnswers = results.filter(r => !r.correct);
+            const stored = loadIncorrectAnswers();
+            const updated = [...stored];
+
+            incorrectAnswers.forEach(answer => {
+                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingIndex === -1) {
+                    updated.push({
+                        questionCode: answer.questionCode,
+                        correctAnswer: answer.correctAnswer,
+                        userAnswers: [answer.userAnswer],
+                        wrongCount: 1
+                    });
+                } else {
+                    updated[existingIndex].wrongCount = (updated[existingIndex].wrongCount || 1) + 1;
+                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
+                    updated[existingIndex].userAnswers.push(answer.userAnswer);
+                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers.slice(-5);
+                }
             });
-        } else {
-            updated[existingIndex].wrongCount = (updated[existingIndex].wrongCount || 1) + 1;
-            updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
-            updated[existingIndex].userAnswers.push(answer.userAnswer);
+
+            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
         }
-    });
-    
-    localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
-}
 
-// 저장된 정답 데이터 불러오기
-function loadCorrectAnswers() {
-    if (!userId) return [];
-    const stored = localStorage.getItem(`${userId}_correctAnswers`);
-    return stored ? JSON.parse(stored) : [];
-}
+        function loadCorrectAnswers() {
+            if (!userId) return [];
+            const stored = localStorage.getItem(`${userId}_correctAnswers`);
+            return stored ? JSON.parse(stored) : [];
+        }
 
-// 저장된 오답 데이터 불러오기
-function loadIncorrectAnswers() {
-    if (!userId) return [];
-    const stored = localStorage.getItem(`${userId}_incorrectAnswers`);
-    return stored ? JSON.parse(stored) : [];
-}
+        function loadIncorrectAnswers() {
+            if (!userId) return [];
+            const stored = localStorage.getItem(`${userId}_incorrectAnswers`);
+            return stored ? JSON.parse(stored) : [];
+        }
 
-// 화면 전환 함수
-function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    document.getElementById(screenId).classList.add('active');
-}
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
 
-// 시작 화면으로 돌아가기
-function goToStart() {
-    showScreen('startScreen');
-}
+        function goToStart() {
+            showScreen('startScreen');
+        }
 
-// 화면 캡처
-function captureScreen() {
-    html2canvas(document.getElementById('resultsScreen')).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'quiz-results.png';
-        link.href = canvas.toDataURL();
-        link.click();
-    });
-}
+        function captureElement(elementId, filename) {
+            html2canvas(document.getElementById(elementId)).then(canvas => {
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
 
-// 오답만 캡처
-function captureIncorrect() {
-    const incorrectResults = document.querySelectorAll('.result-item.incorrect');
-    if (incorrectResults.length === 0) {
-        alert('틀린 문제가 없습니다.');
-        return;
-    }
+        function captureScreen() {
+            captureElement('resultsScreen', 'quiz-results.png');
+        }
 
-    const container = document.createElement('div');
-    container.style.padding = '20px';
-    container.style.backgroundColor = 'white';
-    incorrectResults.forEach(item => {
-        container.appendChild(item.cloneNode(true));
-    });
+        function captureIncorrect() {
+            const incorrectResults = document.querySelectorAll('.result-item.incorrect');
+            if (incorrectResults.length === 0) {
+                alert('틀린 문제가 없습니다.');
+                return;
+            }
 
-    document.body.appendChild(container);
-    html2canvas(container).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'incorrect-answers.png';
-        link.href = canvas.toDataURL();
-        link.click();
-        document.body.removeChild(container);
-    });
-}
+            const container = document.createElement('div');
+            container.style.padding = '20px';
+            container.style.backgroundColor = 'white';
+            incorrectResults.forEach(item => {
+                container.appendChild(item.cloneNode(true));
+            });
+
+            document.body.appendChild(container);
+            html2canvas(container).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'incorrect-answers.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                document.body.removeChild(container);
+            });
+        }
+
+        function retryCorrect() {
+            const correctAnswers = loadCorrectAnswers();
+            if (correctAnswers.length === 0) {
+                alert('맞춘 문제가 없습니다.');
+                return;
+            }
+            const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
+            currentQuestions = generateQuestions(data, correctAnswers.length);
+            currentQuestionIndex = 0;
+            results = [];
+            showQuestion();
+            showScreen('quizScreen');
+        }
+
+        function retryIncorrect() {
+            const incorrectAnswers = loadIncorrectAnswers();
+            if (incorrectAnswers.length === 0) {
+                alert('틀린 문제가 없습니다.');
+                return;
+            }
+            const data = hsData.filter(item => incorrectAnswers.some(ia => ia.questionCode === item.code));
+            currentQuestions = generateQuestions(data, incorrectAnswers.length);
+            currentQuestionIndex = 0;
+            results = [];
+            showQuestion();
+            showScreen('quizScreen');
+        }
+
+        function showStatistics() {
+            const incorrectAnswers = loadIncorrectAnswers();
+            if (incorrectAnswers.length === 0) {
+                alert('오답 데이터가 없습니다.');
+                return;
+            }
+
+            const statisticsList = document.getElementById('statisticsList');
+            statisticsList.innerHTML = '';
+
+            incorrectAnswers.forEach(answer => {
+                const statsCard = document.createElement('div');
+                statsCard.className = 'stats-card';
+
+                const codeParagraph = document.createElement('p');
+                codeParagraph.textContent = `HS코드: ${answer.questionCode}`;
+                statsCard.appendChild(codeParagraph);
+
+                const answerParagraph = document.createElement('p');
+                answerParagraph.textContent = `정답: ${answer.correctAnswer}`;
+                statsCard.appendChild(answerParagraph);
+
+                const wrongCountParagraph = document.createElement('p');
+                wrongCountParagraph.innerHTML = `틀린 횟수: <span class="wrong-count">${answer.wrongCount}</span>`;
+                statsCard.appendChild(wrongCountParagraph);
+
+                statisticsList.appendChild(statsCard);
+            });
+
+            showScreen('statisticsScreen');
+        }
+    </script>
+</body>
+</html>
