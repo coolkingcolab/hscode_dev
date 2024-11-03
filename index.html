@@ -360,6 +360,12 @@
                 choicesDiv.appendChild(button);
             });
 
+            document.getElementById('hsCode').textContent = question.code;
+            const choicesDiv = document.getElementById('choices');
+            choicesDiv.innerHTML = `
+              <button class="choice-btn">${question.correctAnswer.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</button>
+            `;
+            
             document.querySelector('.progress').textContent =
                 `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
             const feedback = document.querySelector('.feedback');
