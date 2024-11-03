@@ -292,12 +292,15 @@
             const incorrectAnswers = loadIncorrectAnswers();
             const correctAnswers = loadCorrectAnswers();
         
-            // 기존 '맞춘 문제 다시 풀기' 버튼 표시 여부 결정
-            document.getElementById('retryCorrectButton').style.display =
-                correctAnswers.length > 0 ? 'block' : 'none';
-            
-            // '맞춘 문제 다시 풀기' 버튼 활성화 여부 결정
-            document.getElementById('retryCorrectButton').disabled = correctAnswers.length === 0;
+            // 기존 '맞춘 문제 다시 풀기' 버튼 표시 여부 및 활성화 여부 결정
+            const retryCorrectButton = document.getElementById('retryCorrectButton');
+            if (correctAnswers.length > 0) {
+                retryCorrectButton.style.display = 'block';
+                retryCorrectButton.disabled = false;
+            } else {
+                retryCorrectButton.style.display = 'none';
+                retryCorrectButton.disabled = true;
+            }
         
             // 오답 노트와 통계 버튼 표시 여부 결정
             document.getElementById('retryIncorrectButton').style.display =
@@ -305,6 +308,7 @@
             document.getElementById('statisticsButton').style.display =
                 incorrectAnswers.length > 0 ? 'block' : 'none';
         }
+
 
 
         function generateQuestions(data = hsData, count = 10) {
