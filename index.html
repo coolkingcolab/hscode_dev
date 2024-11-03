@@ -540,12 +540,17 @@
                 return;
             }
             const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
-            currentQuestions = generateQuestions(data, correctAnswers.length);
+            if (data.length === 0) {
+                alert('맞춘 문제가 없습니다.');
+                return;
+            }
+            currentQuestions = generateQuestions(data, data.length); // data.length 사용
             currentQuestionIndex = 0;
             results = [];
             showQuestion();
             showScreen('quizScreen');
         }
+
 
         
         function retryIncorrect() {
