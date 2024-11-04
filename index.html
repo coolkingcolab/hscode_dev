@@ -461,7 +461,7 @@
             });
 
             localStorage.setItem(userId + '_correctAnswers', JSON.stringify(updated)); 
-            }
+        }
 
         function saveIncorrectResponses() {
             if (!userId) return;
@@ -488,7 +488,7 @@
             });
         
             localStorage.setItem(userId + '_incorrectAnswers', JSON.stringify(updated)); 
-            }
+        }
         function loadCorrectAnswers() {
             if (!userId) return [];
             const stored = localStorage.getItem(${userId}_correctAnswers);
