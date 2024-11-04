@@ -214,7 +214,7 @@
     </div>
 
     <!-- 스크립트 부분 -->
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         const hsData = [];
         let currentQuestions = [];
@@ -223,7 +223,6 @@
         let userId = '';
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded event listener added');
             const savedUserId = localStorage.getItem('userId');
             if (savedUserId) {
                 userId = savedUserId;
@@ -239,8 +238,7 @@
             document.getElementById('logoutButton').addEventListener('click', logout);
         });
         
-        function login() {
-            console.log('Login function called'); // 디버깅 코드 추가
+        async function login() {
             const inputId = document.getElementById('userId').value.trim();
             if (!inputId) {
                 document.getElementById('error-message').textContent = '이용자 ID를 입력해 주세요.';
@@ -263,15 +261,11 @@
         }
 
 
-        function loadHsCodeData() {
+        async function loadHsCodeData() {
         try {
             const response = await fetch('hscode.csv');
             const csvText = await response.text();
-            const data = Papa.parse(csvText, {
-                header: false,
-                skipEmptyLines: true,
-            });
-
+            
             hsData.length = 0;
             data.data.forEach(item => {
                 if (item.name && item.name !== '기타') {
