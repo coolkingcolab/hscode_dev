@@ -181,9 +181,9 @@
             <h1>HS마스터 메뉴</h1>
             <div id="loadingText" class="loading">데이터를 불러오는 중...</div>
             <button class="menu-button" id="startButton" disabled>새로운 퀴즈 시작하기</button>
-            <button class="menu-button" id="retryCorrectButton" style="display: none;" disabled>맞춘 문제 다시 풀기</button>
-            <button class="menu-button" id="retryIncorrectButton" style="display: none;">오답 노트로 재도전</button>
-            <button class="menu-button" id="statisticsButton" style="display: none;">오답 통계 보기</button>
+            <button class="menu-button" id="retryCorrectButton" onclick="retryCorrect()" style="display: none;" disabled>맞춘 문제 다시 풀기</button>
+            <button class="menu-button" id="retryIncorrectButton" onclick="retryIncorrect()" style="display: none;">오답 노트로 재도전</button>
+            <button class="menu-button" id="statisticsButton" onclick="showStatistics()" style="display: none;">오답 통계 보기</button>
             <button class="menu-button" id="logoutButton">로그아웃</button>
         </div>
 
@@ -299,6 +299,8 @@
             }
         }
 
+
+
         function updateMenuVisibility() {
             const incorrectAnswers = loadIncorrectAnswers();
             const correctAnswers = loadCorrectAnswers();
@@ -314,28 +316,16 @@
             }
         
             // 오답 노트와 통계 버튼 표시 여부 결정
-            const retryIncorrectButton = document.getElementById('retryIncorrectButton');
-            if (incorrectAnswers.length > 0) {
-                retryIncorrectButton.style.display = 'block';
-                retryIncorrectButton.disabled = false;
-            } else {
-                retryIncorrectButton.style.display = 'none';
-                retryIncorrectButton.disabled = true;
-            }
-        
-            const statisticsButton = document.getElementById('statisticsButton');
-            if (incorrectAnswers.length > 0) {
-                statisticsButton.style.display = 'block';
-                statisticsButton.disabled = false;
-            } else {
-                statisticsButton.style.display = 'none';
-                statisticsButton.disabled = true;
-            }
+            document.getElementById('retryIncorrectButton').style.display =
+                incorrectAnswers.length > 0 ? 'block' : 'none';
+            document.getElementById('statisticsButton').style.display =
+                incorrectAnswers.length > 0 ? 'block' : 'none';
         }
 
+
+
         function generateQuestions(data = hsData, count = 10) {
-            const usedQuestions = [...loadCorrectAnswers(), ...loadIncorrectAnswers()].map(item => item.questionCode);
-            const filteredData = data.filter(item => !usedQuestions.includes(item.code));
+            const filteredData = data.filter(item => item.name !== '기타'); // '기타'를 제외한 데이터로 필터링
             const shuffled = [...filteredData].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count).map(question => {
                 const choices = [question.name];
@@ -352,6 +342,7 @@
                 };
             });
         }
+
 
         function startQuiz() {
             currentQuestions = generateQuestions();
@@ -463,62 +454,50 @@
         function saveCorrectResponses() {
             if (!userId) return;
             const correctAnswers = results.filter(r => r.correct);
-            let incorrectAnswers = loadIncorrectAnswers();
-            const correctUpdated = loadCorrectAnswers();
+            const stored = loadCorrectAnswers();
+            const updated = [...stored];
 
             correctAnswers.forEach(answer => {
-                const incorrectIndex = incorrectAnswers.findIndex(a => a.questionCode === answer.questionCode);
-                if (incorrectIndex !== -1) {
-                    // 오답 목록에서 정답을 맞춘 경우 삭제
-                    incorrectAnswers.splice(incorrectIndex, 1);
-                }
-                const correctIndex = correctUpdated.findIndex(a => a.questionCode === answer.questionCode);
-                if (correctIndex === -1) {
-                    correctUpdated.push({
+                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingIndex === -1) {
+                    updated.push({
                         questionCode: answer.questionCode,
                         correctAnswer: answer.correctAnswer,
                         correctCount: 1
                     });
                 } else {
-                    correctUpdated[correctIndex].correctCount = (correctUpdated[correctIndex].correctCount || 1) + 1;
+                    updated[existingIndex].correctCount = (updated[existingIndex].correctCount || 1) + 1;
                 }
             });
 
-            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(correctUpdated));
-            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(incorrectAnswers));
+            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated));
         }
 
         function saveIncorrectResponses() {
             if (!userId) return;
             const incorrectAnswers = results.filter(r => !r.correct);
-            let correctAnswers = loadCorrectAnswers();
-            const incorrectUpdated = loadIncorrectAnswers();
+            const stored = loadIncorrectAnswers();
+            const updated = [...stored];
         
             incorrectAnswers.forEach(answer => {
-                const correctIndex = correctAnswers.findIndex(a => a.questionCode === answer.questionCode);
-                if (correctIndex !== -1) {
-                    // 맞춘 문제 목록에서 틀린 문제를 제거
-                    correctAnswers.splice(correctIndex, 1);
-                }
-                const incorrectIndex = incorrectUpdated.findIndex(a => a.questionCode === answer.questionCode);
-                if (incorrectIndex === -1) {
-                    incorrectUpdated.push({
+                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingIndex === -1) {
+                    updated.push({
                         questionCode: answer.questionCode,
                         correctAnswer: answer.correctAnswer,
                         userAnswers: [answer.userAnswer],
                         wrongCount: 1
                     });
                 } else {
-                    incorrectUpdated[incorrectIndex].wrongCount = (incorrectUpdated[incorrectIndex].wrongCount || 1) + 1;
-                    incorrectUpdated[incorrectIndex].userAnswers = incorrectUpdated[incorrectIndex].userAnswers || [];
-                    incorrectUpdated[incorrectIndex].userAnswers.push(answer.userAnswer);
-                    incorrectUpdated[incorrectIndex].userAnswers = incorrectUpdated[incorrectIndex].userAnswers.slice(-5);
-                    incorrectUpdated[incorrectIndex].correctAnswer = answer.correctAnswer;
+                    updated[existingIndex].wrongCount = (updated[existingIndex].wrongCount || 1) + 1;
+                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
+                    updated[existingIndex].userAnswers.push(answer.userAnswer);
+                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers.slice(-5);
+                    updated[existingIndex].correctAnswer = answer.correctAnswer;
                 }
             });
         
-            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(correctAnswers));
-            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(incorrectUpdated));
+            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
         }
         function loadCorrectAnswers() {
             if (!userId) return [];
@@ -581,26 +560,28 @@
         }
 
         function retryCorrect() {
-            const correctAnswers = loadCorrectAnswers();
-            if (correctAnswers.length === 0) {
-                alert('맞춘 문제가 없습니다.');
-                return;
-            }
-            const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
-            
-            // data.length가 0인 경우 예외 처리
-            if (data.length === 0) { 
-                alert('맞춘 문제 데이터를 찾을 수 없습니다.'); 
-                return; 
-            }
+          const correctAnswers = loadCorrectAnswers();
+          if (correctAnswers.length === 0) {
+            alert('맞춘 문제가 없습니다.');
+            return;
+          }
+          const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
+          
+          // data.length가 0인 경우 예외 처리
+          if (data.length === 0) { 
+            alert('맞춘 문제 데이터를 찾을 수 없습니다.'); 
+            return; 
+          }
         
-            currentQuestions = generateQuestions(data, data.length); 
-            currentQuestionIndex = 0;
-            results = [];
-            showQuestion();
-            showScreen('quizScreen');
+          currentQuestions = generateQuestions(data, data.length); 
+          currentQuestionIndex = 0;
+          results = [];
+          showQuestion();
+          showScreen('quizScreen');
         }
 
+
+        
         function retryIncorrect() {
             const incorrectAnswers = loadIncorrectAnswers();
             if (incorrectAnswers.length === 0) {
@@ -608,11 +589,7 @@
                 return;
             }
             const data = hsData.filter(item => incorrectAnswers.some(ia => ia.questionCode === item.code));
-            if (data.length === 0) {
-                alert('틀린 문제 데이터를 찾을 수 없습니다.');
-                return;
-            }
-            currentQuestions = generateQuestions(data, data.length);
+            currentQuestions = generateQuestions(data, incorrectAnswers.length);
             currentQuestionIndex = 0;
             results = [];
             showQuestion();
