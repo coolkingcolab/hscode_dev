@@ -223,6 +223,7 @@
         let userId = '';
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded event listener added');
             const savedUserId = localStorage.getItem('userId');
             if (savedUserId) {
                 userId = savedUserId;
