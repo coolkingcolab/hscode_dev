@@ -591,6 +591,27 @@
             });
         }
 
+        function generateChoices(correctAnswer, incorrectAnswers = []) {
+          const choices = [correctAnswer];
+          
+          // 오답 중에서 1개를 랜덤하게 선택하여 choices에 추가
+          if (incorrectAnswers.length > 0) {
+            const randomIndex = Math.floor(Math.random() * incorrectAnswers.length);
+            choices.push(incorrectAnswers[randomIndex]);
+          }
+          
+          // choices의 길이가 2보다 작으면 hsData에서 랜덤하게 선택하여 추가
+          while (choices.length < 2) {
+            const randomIndex = Math.floor(Math.random() * hsData.length);
+            const randomAnswer = hsData[randomIndex].name;
+            if (!choices.includes(randomAnswer)) {
+              choices.push(randomAnswer);
+            }
+          }
+          
+          return choices.sort(() => Math.random() - 0.5);
+        }
+        
         function retryCorrect() {
           const correctAnswers = loadCorrectAnswers();
           if (correctAnswers.length === 0) {
