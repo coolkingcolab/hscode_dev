@@ -622,13 +622,14 @@
             currentQuestions = correctAnswers.map(answer => ({
                 code: answer.questionCode,
                 correctAnswer: answer.correctAnswer,
-                choices: generateChoices(answer.correctAnswer, hsData, 2) // 선택지 개수를 2개로 설정
+                choices: generateChoices(answer.correctAnswer, hsData.map(item => item.name), 2) // 올바른 문자열 배열 전달
             }));
             currentQuestionIndex = 0;
             results = [];
             showQuestion();
             showScreen('quizScreen');
         }
+
 
         
         function retryIncorrect() {
@@ -641,13 +642,14 @@
             currentQuestions = incorrectAnswers.map(answer => ({
                 code: answer.questionCode,
                 correctAnswer: answer.correctAnswer,
-                choices: generateChoices(answer.correctAnswer, hsData, 2) // 선택지 개수를 2개로 설정
+                choices: generateChoices(answer.correctAnswer, hsData.map(item => item.name), 2) // 올바른 문자열 배열 전달
             }));
             currentQuestionIndex = 0;
             results = [];
             showQuestion();
             showScreen('quizScreen');
         }
+
 
 
         function showStatistics() {
