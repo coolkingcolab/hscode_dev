@@ -622,7 +622,7 @@
           currentQuestions = correctAnswers.map(answer => ({
             code: answer.questionCode,
             correctAnswer: answer.correctAnswer,
-            choices: [answer.correctAnswer]
+            choices: generateChoices(answer.correctAnswer, hsData, 2) // 수정된 부분: 선택지 생성 함수 사용
           }));
           currentQuestionIndex = 0;
           results = [];
@@ -640,7 +640,7 @@
           currentQuestions = incorrectAnswers.map(answer => ({
             code: answer.questionCode,
             correctAnswer: answer.correctAnswer,
-            choices: [answer.correctAnswer, ...answer.userAnswers]
+            choices: generateChoices(answer.correctAnswer, hsData, 2) // 수정된 부분: 선택지 생성 함수 사용
           }));
           currentQuestionIndex = 0;
           results = [];
