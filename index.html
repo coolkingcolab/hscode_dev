@@ -599,33 +599,26 @@
           }
           const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
           
-          // data.length가 0인 경우 예외 처리
-          if (data.length === 0) { 
-            alert('맞춘 문제 데이터를 찾을 수 없습니다.'); 
-            return; 
-          }
-        
-          currentQuestions = generateQuestions(data, data.length); 
+          currentQuestions = generateQuestions(data, data.length);
           currentQuestionIndex = 0;
           results = [];
           showQuestion();
           showScreen('quizScreen');
         }
-
-
         
         function retryIncorrect() {
-            const incorrectAnswers = loadIncorrectAnswers();
-            if (incorrectAnswers.length === 0) {
-                alert('틀린 문제가 없습니다.');
-                return;
-            }
-            const data = hsData.filter(item => incorrectAnswers.some(ia => ia.questionCode === item.code));
-            currentQuestions = generateQuestions(data, incorrectAnswers.length);
-            currentQuestionIndex = 0;
-            results = [];
-            showQuestion();
-            showScreen('quizScreen');
+          const incorrectAnswers = loadIncorrectAnswers();
+          if (incorrectAnswers.length === 0) {
+            alert('틀린 문제가 없습니다.');
+            return;
+          }
+          const data = hsData.filter(item => incorrectAnswers.some(ia => ia.questionCode === item.code));
+          
+          currentQuestions = generateQuestions(data, data.length);
+          currentQuestionIndex = 0;
+          results = [];
+          showQuestion();
+          showScreen('quizScreen');
         }
 
         function showStatistics() {
