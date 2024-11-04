@@ -238,7 +238,7 @@
             document.getElementById('statisticsButton').addEventListener('click', showStatistics);
             document.getElementById('logoutButton').addEventListener('click', logout);
         });
-
+        
         async function login() {
             const inputId = document.getElementById('userId').value.trim();
             if (!inputId) {
@@ -254,12 +254,13 @@
             await loadHsCodeData();
             updateMenuVisibility();
         }
-
+        
         function logout() {
             userId = '';
             document.getElementById('userId').value = '';
             showScreen('loginScreen');
         }
+
 
         async function loadHsCodeData() {
         try {
@@ -444,8 +445,9 @@
         function saveCorrectResponses() {
             if (!userId) return;
             const correctAnswers = results.filter(r => r.correct);
-            const stored = loadCorrectAnswers();
+            const stored = JSON.parse(localStorage.getItem(`${userId}_correctAnswers`) || '[]');
             const updated = [...stored];
+
 
             correctAnswers.forEach(answer => {
                 const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
@@ -460,13 +462,13 @@
                 }
             });
 
-            localStorage.setItem(userId + '_correctAnswers', JSON.stringify(updated)); 
+            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated)); 
         }
 
         function saveIncorrectResponses() {
             if (!userId) return;
             const incorrectAnswers = results.filter(r => !r.correct);
-            const stored = loadIncorrectAnswers();
+            const stored = JSON.parse(localStorage.getItem(`${userId}_incorrectAnswers`) || '[]');
             const updated = [...stored];
         
             incorrectAnswers.forEach(answer => {
@@ -487,17 +489,17 @@
                 }
             });
         
-            localStorage.setItem(userId + '_incorrectAnswers', JSON.stringify(updated)); 
+           localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated)); 
         }
         function loadCorrectAnswers() {
             if (!userId) return [];
-            const stored = localStorage.getItem(${userId}_correctAnswers);
+            const stored = localStorage.getItem(`${userId}_correctAnswers`);
             return stored ? JSON.parse(stored) : [];
         }
-
+        
         function loadIncorrectAnswers() {
             if (!userId) return [];
-            const stored = localStorage.getItem(${userId}_incorrectAnswers);
+            const stored = localStorage.getItem(`${userId}_incorrectAnswers`);
             return stored ? JSON.parse(stored) : [];
         }
 
