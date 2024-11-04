@@ -215,6 +215,7 @@
 
     <!-- 스크립트 부분 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script>
         const hsData = [];
         let currentQuestions = [];
@@ -265,23 +266,28 @@
                 const response = await fetch('hscode.csv');
                 const csvText = await response.text();
         
-                const lines = csvText.split('\n');
-                hsData.length = 0;
-                lines.slice(1).forEach(line => {
-                    // 쉼표를 포함한 필드 처리를 위해 정규표현식 사용
-                    const match = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                    if (match && match.length >= 2) {
-                        const code = match[0].replace(/^"|"$/g, '').trim();
-                        const name = match[1].replace(/^"|"$/g, '').trim();
-                        if (name !== '기타') {
-                            hsData.push({ code, name });
-                        }
+                // PapaParse를 사용해 CSV 파일 파싱
+                Papa.parse(csvText, {
+                    header: true, // 첫 번째 행을 헤더로 사용
+                    skipEmptyLines: true, // 빈 줄 건너뜀
+                    complete: function(results) {
+                        hsData.length = 0;
+                        results.data.forEach(row => {
+                            if (row['한글품목명'] !== '기타') { // '기타' 항목 제외
+                                hsData.push({ code: row['HS부호'], name: row['한글품목명'] });
+                            }
+                        });
+        
+                        // 데이터 로딩 완료 후 버튼 활성화
+                        document.getElementById('startButton').disabled = false;
+                        document.getElementById('loadingText').style.display = 'none';
+                        updateMenuVisibility();
+                    },
+                    error: function(error) {
+                        document.getElementById('loadingText').textContent = '데이터를 불러오는데 실패했습니다. 다시 시도해 주세요.';
+                        console.error('Error parsing CSV:', error);
                     }
                 });
-        
-                document.getElementById('startButton').disabled = false;
-                document.getElementById('loadingText').style.display = 'none';
-                updateMenuVisibility();
             } catch (error) {
                 document.getElementById('loadingText').textContent = '데이터를 불러오는데 실패했습니다. 다시 시도해 주세요.';
                 const retryButton = document.createElement('button');
@@ -292,6 +298,7 @@
                 console.error('Error loading CSV:', error);
             }
         }
+
 
 
         function updateMenuVisibility() {
