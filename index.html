@@ -249,7 +249,7 @@
         
             userId = inputId;
             localStorage.setItem('userId', userId); // localStorage에 사용자 ID 저장
-            document.getElementById('welcome-message').textContent = ${userId}님 환영합니다!;
+            document.getElementById('welcome-message').textContent = `${userId}님 환영합니다!`;
             showScreen('startScreen');
             await loadHsCodeData();
             updateMenuVisibility();
@@ -357,8 +357,7 @@
                 choicesDiv.appendChild(button);
             });
 
-            document.querySelector('.progress').textContent =
-                ${currentQuestionIndex + 1} / ${currentQuestions.length};
+           document.querySelector('.progress').textContent = `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
             const feedback = document.querySelector('.feedback');
             feedback.textContent = '';
             feedback.className = 'feedback';
@@ -408,11 +407,11 @@
             const correctCount = results.filter(r => r.correct).length;
 
             const resultHeader = document.createElement('h3');
-            resultHeader.textContent = 결과: ${correctCount} / ${results.length} 문제 정답;
+            resultHeader.textContent = `결과: ${correctCount} / ${results.length} 문제 정답`;
             resultsList.appendChild(resultHeader);
 
             const userParagraph = document.createElement('p');
-            userParagraph.textContent = 사용자: ${userId};
+            userParagraph.textContent = `사용자: ${userId}`;
             resultsList.appendChild(userParagraph);
 
             results.forEach((result, index) => {
