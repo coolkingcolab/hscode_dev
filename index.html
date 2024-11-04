@@ -214,7 +214,7 @@
     </div>
 
     <!-- 스크립트 부분 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         const hsData = [];
         let currentQuestions = [];
@@ -245,7 +245,7 @@
                 document.getElementById('userId').focus();
                 return;
             }
-        
+
             userId = inputId;
             localStorage.setItem('userId', userId); // localStorage에 사용자 ID 저장
             document.getElementById('welcome-message').textContent = `${userId}님 환영합니다!`;
@@ -260,46 +260,47 @@
             showScreen('loginScreen');
         }
 
-        async function loadHsCodeData() {
-            try {
-                const response = await fetch('hscode.csv');
-                const csvText = await response.text();
-        
-                const lines = csvText.split('\n');
-                hsData.length = 0;
-        
-                lines.slice(1).forEach(line => {
-                    // 인용부호와 쉼표를 올바르게 처리하기 위해 정규 표현식을 수정
-                    const match = line.match(/("(?:[^"]|"")*"|[^",\s]+)(?=\s*,|\s*$)/g);
-                    if (match && match.length >= 2) {
-                        const code = match[0].replace(/^"|"$/g, '').trim();
-                        const name = match[1].replace(/^"|"$/g, '').trim();
-                        if (name !== '기타') {
-                            hsData.push({ code, name });
-                        }
-                    }
-                });
-        
-                document.getElementById('startButton').disabled = false;
-                document.getElementById('loadingText').style.display = 'none';
-                updateMenuVisibility();
-            } catch (error) {
-                document.getElementById('loadingText').textContent = '데이터를 불러오는데 실패했습니다. 다시 시도해 주세요.';
-                const retryButton = document.createElement('button');
-                retryButton.textContent = '재시도';
-                retryButton.className = 'btn';
-                retryButton.onclick = loadHsCodeData;
-                document.getElementById('startScreen').appendChild(retryButton);
-                console.error('Error loading CSV:', error);
-            }
-        }
+        function loadHsCodeData() {
+            const loadingText = document.getElementById('loadingText');
+            loadingText.textContent = '데이터를 불러오는 중입니다...';
 
+            Papa.parse('hscode.csv', {
+                download: true,
+                header: false,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    hsData.length = 0; // 기존 데이터를 초기화
+
+                    results.data.forEach((row) => {
+                        if (row.length >= 2) {
+                            const code = row[0].trim();
+                            const name = row[1].trim();
+                            if (name !== '기타') {
+                                hsData.push({ code, name });
+                            }
+                        }
+                    });
+
+                    document.getElementById('startButton').disabled = false;
+                    loadingText.style.display = 'none';
+                    updateMenuVisibility();
+                },
+                error: function(error) {
+                    loadingText.textContent = '데이터를 불러오는데 실패했습니다. 다시 시도해 주세요.';
+                    const retryButton = document.createElement('button');
+                    retryButton.textContent = '재시도';
+                    retryButton.className = 'btn';
+                    retryButton.onclick = loadHsCodeData;
+                    document.getElementById('startScreen').appendChild(retryButton);
+                    console.error('Error parsing CSV:', error);
+                }
+            });
+        }
 
         function updateMenuVisibility() {
             const incorrectAnswers = loadIncorrectAnswers();
             const correctAnswers = loadCorrectAnswers();
-        
-            // 기존 '맞춘 문제 다시 풀기' 버튼 표시 여부 및 활성화 여부 결정
+
             const retryCorrectButton = document.getElementById('retryCorrectButton');
             if (correctAnswers.length > 0) {
                 retryCorrectButton.style.display = 'block';
@@ -308,8 +309,7 @@
                 retryCorrectButton.style.display = 'none';
                 retryCorrectButton.disabled = true;
             }
-        
-            // 오답 노트와 통계 버튼 표시 여부 결정
+
             document.getElementById('retryIncorrectButton').style.display =
                 incorrectAnswers.length > 0 ? 'block' : 'none';
             document.getElementById('statisticsButton').style.display =
