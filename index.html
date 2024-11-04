@@ -322,12 +322,28 @@
                 incorrectAnswers.length > 0 ? 'block' : 'none';
         }
 
-
-
+        function getAttemptedQuestionCodes() {
+          const correctAnswers = loadCorrectAnswers();
+          const incorrectAnswers = loadIncorrectAnswers();
+        
+          const attemptedQuestionCodes = [
+            ...correctAnswers.map(answer => answer.questionCode),
+            ...incorrectAnswers.map(answer => answer.questionCode)
+          ];
+        
+          return [...new Set(attemptedQuestionCodes)];
+        }
+        
         function generateQuestions(data = hsData, count = 10) {
-            const filteredData = data.filter(item => item.name !== '기타'); // '기타'를 제외한 데이터로 필터링
-            const shuffled = [...filteredData].sort(() => Math.random() - 0.5);
-            return shuffled.slice(0, count).map(question => {
+          const attemptedQuestionCodes = getAttemptedQuestionCodes();
+          const filteredData = data.filter(item => 
+              item.name !== '기타' && 
+              !attemptedQuestionCodes.includes(item.code)
+          );
+                    
+          const shuffled = [...filteredData].sort(() => Math.random() - 0.5);
+          
+          return shuffled.slice(0, count).map(question => {
                 const choices = [question.name];
                 while (choices.length < 2) {
                     const randomItem = filteredData[Math.floor(Math.random() * filteredData.length)].name;
@@ -376,18 +392,18 @@
         function checkAnswer(choice) {
             const question = currentQuestions[currentQuestionIndex];
             const correct = choice === question.correctAnswer;
-
+        
             results.push({
                 questionCode: question.code,
                 correctAnswer: question.correctAnswer,
                 userAnswer: choice,
                 correct: correct
             });
-
+        
             const feedback = document.querySelector('.feedback');
             feedback.textContent = correct ? '정답입니다!' : '틀렸습니다.';
             feedback.className = 'feedback ' + (correct ? 'correct' : 'incorrect');
-
+        
             const buttons = document.querySelectorAll('.choice-btn');
             buttons.forEach(button => {
                 button.disabled = true;
@@ -399,7 +415,23 @@
                     button.style.color = 'white';
                 }
             });
-
+        
+            if (correct) {
+                // 맞힌 경우
+                const incorrectAnswers = loadIncorrectAnswers();
+                const updatedIncorrectAnswers = incorrectAnswers.filter(answer => 
+                    answer.questionCode !== question.code
+                );
+                localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updatedIncorrectAnswers));
+            } else {
+                // 틀린 경우 
+                const correctAnswers = loadCorrectAnswers();
+                const updatedCorrectAnswers = correctAnswers.filter(answer =>
+                    answer.questionCode !== question.code  
+                );
+                localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updatedCorrectAnswers));
+            }
+        
             setTimeout(() => {
                 if (currentQuestionIndex < currentQuestions.length - 1) {
                     currentQuestionIndex++;
