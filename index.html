@@ -239,7 +239,7 @@
             document.getElementById('logoutButton').addEventListener('click', logout);
         });
         
-        async function login() {
+        function login() {
             console.log('Login function called'); // 디버깅 코드 추가
             const inputId = document.getElementById('userId').value.trim();
             if (!inputId) {
@@ -263,7 +263,7 @@
         }
 
 
-        async function loadHsCodeData() {
+        function loadHsCodeData() {
         try {
             const response = await fetch('hscode.csv');
             const csvText = await response.text();
