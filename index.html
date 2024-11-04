@@ -240,6 +240,7 @@
         });
         
         async function login() {
+            console.log('Login function called'); // 디버깅 코드 추가
             const inputId = document.getElementById('userId').value.trim();
             if (!inputId) {
                 document.getElementById('error-message').textContent = '이용자 ID를 입력해 주세요.';
