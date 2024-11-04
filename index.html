@@ -597,9 +597,12 @@
             alert('맞춘 문제가 없습니다.');
             return;
           }
-          const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
           
-          currentQuestions = generateQuestions(data, data.length);
+          currentQuestions = correctAnswers.map(answer => ({
+            code: answer.questionCode,
+            correctAnswer: answer.correctAnswer,
+            choices: [answer.correctAnswer]
+          }));
           currentQuestionIndex = 0;
           results = [];
           showQuestion();
@@ -612,9 +615,12 @@
             alert('틀린 문제가 없습니다.');
             return;
           }
-          const data = hsData.filter(item => incorrectAnswers.some(ia => ia.questionCode === item.code));
           
-          currentQuestions = generateQuestions(data, data.length);
+          currentQuestions = incorrectAnswers.map(answer => ({
+            code: answer.questionCode,
+            correctAnswer: answer.correctAnswer,
+            choices: [answer.correctAnswer, ...answer.userAnswers]
+          }));
           currentQuestionIndex = 0;
           results = [];
           showQuestion();
