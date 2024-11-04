@@ -321,7 +321,8 @@
         }
 
         function generateQuestions(data = hsData, count = 10) {
-            const filteredData = data.filter(item => item.name !== '기타'); // '기타'를 제외한 데이터로 필터링
+            const usedQuestions = [...loadCorrectAnswers(), ...loadIncorrectAnswers()].map(item => item.questionCode);
+            const filteredData = data.filter(item => !usedQuestions.includes(item.code));
             const shuffled = [...filteredData].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count).map(question => {
                 const choices = [question.name];
@@ -449,60 +450,62 @@
         function saveCorrectResponses() {
             if (!userId) return;
             const correctAnswers = results.filter(r => r.correct);
-            const stored = loadCorrectAnswers();
-            const updated = [...stored];
+            let incorrectAnswers = loadIncorrectAnswers();
+            const correctUpdated = loadCorrectAnswers();
 
             correctAnswers.forEach(answer => {
-                const existingIncorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingIncorrectIndex !== -1) {
+                const incorrectIndex = incorrectAnswers.findIndex(a => a.questionCode === answer.questionCode);
+                if (incorrectIndex !== -1) {
                     // 오답 목록에서 정답을 맞춘 경우 삭제
-                    updated.splice(existingIncorrectIndex, 1);
+                    incorrectAnswers.splice(incorrectIndex, 1);
                 }
-                const existingCorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingCorrectIndex === -1) {
-                    updated.push({
+                const correctIndex = correctUpdated.findIndex(a => a.questionCode === answer.questionCode);
+                if (correctIndex === -1) {
+                    correctUpdated.push({
                         questionCode: answer.questionCode,
                         correctAnswer: answer.correctAnswer,
                         correctCount: 1
                     });
                 } else {
-                    updated[existingCorrectIndex].correctCount = (updated[existingCorrectIndex].correctCount || 1) + 1;
+                    correctUpdated[correctIndex].correctCount = (correctUpdated[correctIndex].correctCount || 1) + 1;
                 }
             });
 
-            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(updated));
+            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(correctUpdated));
+            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(incorrectAnswers));
         }
 
         function saveIncorrectResponses() {
             if (!userId) return;
             const incorrectAnswers = results.filter(r => !r.correct);
-            const stored = loadIncorrectAnswers();
-            const updated = [...stored];
+            let correctAnswers = loadCorrectAnswers();
+            const incorrectUpdated = loadIncorrectAnswers();
         
             incorrectAnswers.forEach(answer => {
-                const existingCorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingCorrectIndex !== -1) {
+                const correctIndex = correctAnswers.findIndex(a => a.questionCode === answer.questionCode);
+                if (correctIndex !== -1) {
                     // 맞춘 문제 목록에서 틀린 문제를 제거
-                    updated.splice(existingCorrectIndex, 1);
+                    correctAnswers.splice(correctIndex, 1);
                 }
-                const existingIncorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingIncorrectIndex === -1) {
-                    updated.push({
+                const incorrectIndex = incorrectUpdated.findIndex(a => a.questionCode === answer.questionCode);
+                if (incorrectIndex === -1) {
+                    incorrectUpdated.push({
                         questionCode: answer.questionCode,
                         correctAnswer: answer.correctAnswer,
                         userAnswers: [answer.userAnswer],
                         wrongCount: 1
                     });
                 } else {
-                    updated[existingIncorrectIndex].wrongCount = (updated[existingIncorrectIndex].wrongCount || 1) + 1;
-                    updated[existingIncorrectIndex].userAnswers = updated[existingIncorrectIndex].userAnswers || [];
-                    updated[existingIncorrectIndex].userAnswers.push(answer.userAnswer);
-                    updated[existingIncorrectIndex].userAnswers = updated[existingIncorrectIndex].userAnswers.slice(-5);
-                    updated[existingIncorrectIndex].correctAnswer = answer.correctAnswer;
+                    incorrectUpdated[incorrectIndex].wrongCount = (incorrectUpdated[incorrectIndex].wrongCount || 1) + 1;
+                    incorrectUpdated[incorrectIndex].userAnswers = incorrectUpdated[incorrectIndex].userAnswers || [];
+                    incorrectUpdated[incorrectIndex].userAnswers.push(answer.userAnswer);
+                    incorrectUpdated[incorrectIndex].userAnswers = incorrectUpdated[incorrectIndex].userAnswers.slice(-5);
+                    incorrectUpdated[incorrectIndex].correctAnswer = answer.correctAnswer;
                 }
             });
         
-            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(updated));
+            localStorage.setItem(`${userId}_correctAnswers`, JSON.stringify(correctAnswers));
+            localStorage.setItem(`${userId}_incorrectAnswers`, JSON.stringify(incorrectUpdated));
         }
         function loadCorrectAnswers() {
             if (!userId) return [];
