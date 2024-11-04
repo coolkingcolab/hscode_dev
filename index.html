@@ -181,9 +181,9 @@
             <h1>HS마스터 메뉴</h1>
             <div id="loadingText" class="loading">데이터를 불러오는 중...</div>
             <button class="menu-button" id="startButton" disabled>새로운 퀴즈 시작하기</button>
-            <button class="menu-button" id="retryCorrectButton" onclick="retryCorrect()" style="display: none;" disabled>맞춘 문제 다시 풀기</button>
-            <button class="menu-button" id="retryIncorrectButton" onclick="retryIncorrect()" style="display: none;">오답 노트로 재도전</button>
-            <button class="menu-button" id="statisticsButton" onclick="showStatistics()" style="display: none;">오답 통계 보기</button>
+            <button class="menu-button" id="retryCorrectButton" style="display: none;" disabled>맞춘 문제 다시 풀기</button>
+            <button class="menu-button" id="retryIncorrectButton" style="display: none;">오답 노트로 재도전</button>
+            <button class="menu-button" id="statisticsButton" style="display: none;">오답 통계 보기</button>
             <button class="menu-button" id="logoutButton">로그아웃</button>
         </div>
 
@@ -314,10 +314,23 @@
             }
         
             // 오답 노트와 통계 버튼 표시 여부 결정
-            document.getElementById('retryIncorrectButton').style.display =
-                incorrectAnswers.length > 0 ? 'block' : 'none';
-            document.getElementById('statisticsButton').style.display =
-                incorrectAnswers.length > 0 ? 'block' : 'none';
+            const retryIncorrectButton = document.getElementById('retryIncorrectButton');
+            if (incorrectAnswers.length > 0) {
+                retryIncorrectButton.style.display = 'block';
+                retryIncorrectButton.disabled = false;
+            } else {
+                retryIncorrectButton.style.display = 'none';
+                retryIncorrectButton.disabled = true;
+            }
+        
+            const statisticsButton = document.getElementById('statisticsButton');
+            if (incorrectAnswers.length > 0) {
+                statisticsButton.style.display = 'block';
+                statisticsButton.disabled = false;
+            } else {
+                statisticsButton.style.display = 'none';
+                statisticsButton.disabled = true;
+            }
         }
 
         function generateQuestions(data = hsData, count = 10) {
@@ -595,7 +608,11 @@
                 return;
             }
             const data = hsData.filter(item => incorrectAnswers.some(ia => ia.questionCode === item.code));
-            currentQuestions = generateQuestions(data, incorrectAnswers.length);
+            if (data.length === 0) {
+                alert('틀린 문제 데이터를 찾을 수 없습니다.');
+                return;
+            }
+            currentQuestions = generateQuestions(data, data.length);
             currentQuestionIndex = 0;
             results = [];
             showQuestion();
