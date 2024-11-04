@@ -299,8 +299,6 @@
             }
         }
 
-
-
         function updateMenuVisibility() {
             const incorrectAnswers = loadIncorrectAnswers();
             const correctAnswers = loadCorrectAnswers();
@@ -322,8 +320,6 @@
                 incorrectAnswers.length > 0 ? 'block' : 'none';
         }
 
-
-
         function generateQuestions(data = hsData, count = 10) {
             const filteredData = data.filter(item => item.name !== '기타'); // '기타'를 제외한 데이터로 필터링
             const shuffled = [...filteredData].sort(() => Math.random() - 0.5);
@@ -342,7 +338,6 @@
                 };
             });
         }
-
 
         function startQuiz() {
             currentQuestions = generateQuestions();
@@ -458,15 +453,20 @@
             const updated = [...stored];
 
             correctAnswers.forEach(answer => {
-                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingIndex === -1) {
+                const existingIncorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingIncorrectIndex !== -1) {
+                    // 오답 목록에서 정답을 맞춘 경우 삭제
+                    updated.splice(existingIncorrectIndex, 1);
+                }
+                const existingCorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingCorrectIndex === -1) {
                     updated.push({
                         questionCode: answer.questionCode,
                         correctAnswer: answer.correctAnswer,
                         correctCount: 1
                     });
                 } else {
-                    updated[existingIndex].correctCount = (updated[existingIndex].correctCount || 1) + 1;
+                    updated[existingCorrectIndex].correctCount = (updated[existingCorrectIndex].correctCount || 1) + 1;
                 }
             });
 
@@ -480,8 +480,13 @@
             const updated = [...stored];
         
             incorrectAnswers.forEach(answer => {
-                const existingIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
-                if (existingIndex === -1) {
+                const existingCorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingCorrectIndex !== -1) {
+                    // 맞춘 문제 목록에서 틀린 문제를 제거
+                    updated.splice(existingCorrectIndex, 1);
+                }
+                const existingIncorrectIndex = updated.findIndex(a => a.questionCode === answer.questionCode);
+                if (existingIncorrectIndex === -1) {
                     updated.push({
                         questionCode: answer.questionCode,
                         correctAnswer: answer.correctAnswer,
@@ -489,11 +494,11 @@
                         wrongCount: 1
                     });
                 } else {
-                    updated[existingIndex].wrongCount = (updated[existingIndex].wrongCount || 1) + 1;
-                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers || [];
-                    updated[existingIndex].userAnswers.push(answer.userAnswer);
-                    updated[existingIndex].userAnswers = updated[existingIndex].userAnswers.slice(-5);
-                    updated[existingIndex].correctAnswer = answer.correctAnswer;
+                    updated[existingIncorrectIndex].wrongCount = (updated[existingIncorrectIndex].wrongCount || 1) + 1;
+                    updated[existingIncorrectIndex].userAnswers = updated[existingIncorrectIndex].userAnswers || [];
+                    updated[existingIncorrectIndex].userAnswers.push(answer.userAnswer);
+                    updated[existingIncorrectIndex].userAnswers = updated[existingIncorrectIndex].userAnswers.slice(-5);
+                    updated[existingIncorrectIndex].correctAnswer = answer.correctAnswer;
                 }
             });
         
@@ -560,28 +565,26 @@
         }
 
         function retryCorrect() {
-          const correctAnswers = loadCorrectAnswers();
-          if (correctAnswers.length === 0) {
-            alert('맞춘 문제가 없습니다.');
-            return;
-          }
-          const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
-          
-          // data.length가 0인 경우 예외 처리
-          if (data.length === 0) { 
-            alert('맞춘 문제 데이터를 찾을 수 없습니다.'); 
-            return; 
-          }
+            const correctAnswers = loadCorrectAnswers();
+            if (correctAnswers.length === 0) {
+                alert('맞춘 문제가 없습니다.');
+                return;
+            }
+            const data = hsData.filter(item => correctAnswers.some(ca => ca.questionCode === item.code));
+            
+            // data.length가 0인 경우 예외 처리
+            if (data.length === 0) { 
+                alert('맞춘 문제 데이터를 찾을 수 없습니다.'); 
+                return; 
+            }
         
-          currentQuestions = generateQuestions(data, data.length); 
-          currentQuestionIndex = 0;
-          results = [];
-          showQuestion();
-          showScreen('quizScreen');
+            currentQuestions = generateQuestions(data, data.length); 
+            currentQuestionIndex = 0;
+            results = [];
+            showQuestion();
+            showScreen('quizScreen');
         }
 
-
-        
         function retryIncorrect() {
             const incorrectAnswers = loadIncorrectAnswers();
             if (incorrectAnswers.length === 0) {
